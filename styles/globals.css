@@ -1,25 +1,190 @@
+/* ─── GOV.SA Design System (كود المنصات) ─── */
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap");
+
+/* stylelint-disable at-rule-no-unknown */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+/* stylelint-enable at-rule-no-unknown */
 
+/* ─── Light theme tokens ─── */
 :root {
+  /* Primary palette — GOV.SA */
+  --govsa-green: #26634B;
+  --govsa-darkblue: #160F3E;
+  --govsa-blue: #005A96;
+  --govsa-tiffany: #0AEBD7;
+
+  /* Semantic */
   --bgmain: #F7F8FA;
   --surface: #FFFFFF;
-  --border: #E5E7EB;
-  --text: #0F172A;
-  --muted: #475569;
-  --primary: #006C35;
-  --primaryHover: #005A2C;
-  --secondary: #B88A2A;
+  --surface-elevated: #FFFFFF;
+  --border: #E0E2E6;
+  --border-subtle: #F0F1F3;
+  --text: #160F3E;
+  --text-secondary: #52525B;
+  --text-muted: #9CA3AF;
+  --primary: #26634B;
+  --primaryHover: #1D4E3B;
+  --secondary: #005A96;
+
+  /* Status */
+  --success: #006604;
+  --warning: #FFC107;
+  --danger: #AF0818;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.07);
+  --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.08);
+  --shadow-glow: none;
 }
 
-.bg-bgmain {
-  background: var(--bgmain);
+/* ─── Dark theme tokens ─── */
+.dark {
+  --govsa-green: #34D399;
+  --govsa-darkblue: #0b0d17;
+  --govsa-blue: #38BDF8;
+  --govsa-tiffany: #2DD4BF;
+
+  --bgmain: #0b0d17;
+  --surface: #111827;
+  --surface-elevated: #1a2332;
+  --border: #1e293b;
+  --border-subtle: #1a2332;
+  --text: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --primary: #34D399;
+  --primaryHover: #6EE7B7;
+  --secondary: #38BDF8;
+
+  --success: #34D399;
+  --warning: #FBBF24;
+  --danger: #F87171;
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 20px rgba(52, 211, 153, 0.06);
 }
 
-/* Better default typography for Arabic + Latin */
+/* ─── Smooth theme transition ─── */
+*,
+*::before,
+*::after {
+  transition-property: background-color, border-color, box-shadow;
+  transition-duration: 0.25s;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Don't transition transforms, widths, etc — only colors and shadows */
+input, button, a, select, textarea {
+  transition-property: background-color, border-color, box-shadow, color, opacity;
+  transition-duration: 0.2s;
+  transition-timing-function: ease;
+}
+
+/* ─── Base typography — GOV.SA ─── */
 html {
-  font-family: "IBM Plex Sans Arabic", "Tajawal", "Cairo", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  font-family: "IBM Plex Sans Arabic", "Noto Naskh Arabic", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  color: var(--text);
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+body {
+  background: var(--bgmain);
   color: var(--text);
 }
 
+/* ─── GOV.SA Button Style (pill-shaped, 2px border) ─── */
+.govsa-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3rem;
+  border: 2px solid transparent;
+  padding: 0.625rem 2rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+}
+
+.govsa-btn-primary {
+  background: var(--primary);
+  color: #ffffff;
+  border-color: var(--primary);
+}
+
+.dark .govsa-btn-primary {
+  color: #0b0d17;
+  box-shadow: 0 0 16px rgba(52, 211, 153, 0.2);
+}
+
+.govsa-btn-primary:hover {
+  background: var(--primaryHover);
+  border-color: var(--primaryHover);
+}
+
+.dark .govsa-btn-primary:hover {
+  box-shadow: 0 0 24px rgba(52, 211, 153, 0.3);
+}
+
+.govsa-btn-outline {
+  background: transparent;
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+.govsa-btn-outline:hover {
+  background: var(--primary);
+  color: #ffffff;
+}
+
+.dark .govsa-btn-outline:hover {
+  color: #0b0d17;
+}
+
+/* ─── GOV.SA Card Style ─── */
+.govsa-card {
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: var(--shadow-md);
+}
+
+.govsa-card:hover {
+  box-shadow: var(--shadow-lg);
+}
+
+/* ─── Scrollbar styling ─── */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bgmain);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* ─── Dark mode selection highlight ─── */
+.dark ::selection {
+  background: rgba(52, 211, 153, 0.25);
+  color: #f1f5f9;
+}
+
+/* ─── Focus ring for accessibility in dark ─── */
+.dark *:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}

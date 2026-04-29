@@ -100,7 +100,12 @@ const t = {
 } as const;
 
 function formatDateShort(date: string) {
-  const d = new Date(date);
+  // SQLite CURRENT_TIMESTAMP is UTC but lacks the 'Z' suffix — append it so
+  // the browser parses it as UTC and converts to local time automatically.
+  const raw = date?.trim() || "";
+  const iso = raw.endsWith("Z") || raw.includes("+") ? raw : raw.replace(" ", "T") + "Z";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return raw;
   return d.toLocaleString("en-US", { month: "short", day: "2-digit", hour: "2-digit", minute: "2-digit" });
 }
 
@@ -127,11 +132,11 @@ function Navbar({
   const tr = t[lang];
 
   return (
-    <div className="sticky top-0 z-40 border-b border-borderSubtle bg-surface/95 backdrop-blur-xl shadow-sm dark:border-slate-700/80 dark:bg-slate-900/95">
+    <div className="sticky top-0 z-40 border-b border-govsa-green/20 bg-white/90 backdrop-blur-xl shadow-sm dark:border-dark-border dark:bg-dark-surface/90 dark:shadow-dark-card">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
         {/* Left: App Name */}
         <div className="flex w-1/4 items-center">
-          <span className="text-sm font-bold uppercase tracking-[0.22em] text-accentPrimary dark:text-emerald-400">
+          <span className="text-sm font-bold uppercase tracking-[0.22em] text-govsa-green dark:text-dark-accent">
             {tr.nav.appName}
           </span>
         </div>
@@ -145,8 +150,8 @@ function Navbar({
                 onClick={() => setPage("home")}
                 className={`px-3 py-1 text-xs transition-all ${
                   page === "home"
-                    ? "font-bold text-accentPrimary border-b-2 border-accentPrimary"
-                    : "text-textMuted hover:text-textPrimary"
+                    ? "font-bold text-govsa-green border-b-2 border-govsa-green dark:text-dark-accent dark:border-dark-accent"
+                    : "text-textMuted hover:text-textPrimary dark:text-dark-text-secondary dark:hover:text-dark-text"
                 }`}
               >
                 {tr.nav.home}
@@ -156,8 +161,8 @@ function Navbar({
                 onClick={() => setPage("about")}
                 className={`px-3 py-1 text-xs transition-all ${
                   page === "about"
-                    ? "font-bold text-accentPrimary border-b-2 border-accentPrimary"
-                    : "text-textMuted hover:text-textPrimary"
+                    ? "font-bold text-govsa-green border-b-2 border-govsa-green dark:text-dark-accent dark:border-dark-accent"
+                    : "text-textMuted hover:text-textPrimary dark:text-dark-text-secondary dark:hover:text-dark-text"
                 }`}
               >
                 {tr.nav.about}
@@ -168,8 +173,8 @@ function Navbar({
                   onClick={() => setPage("admin")}
                   className={`px-3 py-1 text-xs transition-all ${
                     page === "admin"
-                      ? "font-bold text-accentPrimary border-b-2 border-accentPrimary"
-                      : "text-textMuted hover:text-textPrimary"
+                      ? "font-bold text-govsa-green border-b-2 border-govsa-green dark:text-dark-accent dark:border-dark-accent"
+                      : "text-textMuted hover:text-textPrimary dark:text-dark-text-secondary dark:hover:text-dark-text"
                   }`}
                 >
                   {tr.nav.admin}
@@ -183,7 +188,7 @@ function Navbar({
           <button
             type="button"
             onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-borderSubtle bg-white text-textMuted transition hover:border-accentPrimary/30 hover:text-accentPrimary dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-borderSubtle bg-white text-textMuted transition hover:border-govsa-green/30 hover:text-govsa-green dark:border-dark-border dark:bg-dark-elevated dark:text-dark-text-secondary dark:hover:text-dark-accent dark:hover:border-dark-accent/30"
           >
             <ThemeToggleIcon theme={theme} />
           </button>
@@ -191,7 +196,7 @@ function Navbar({
           <button
             type="button"
             onClick={() => setLang(lang === "en" ? "ar" : "en")}
-            className="rounded-control border border-borderSubtle bg-white px-2 py-1 text-[10px] font-bold text-textPrimary transition hover:bg-bgmain dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300"
+            className="rounded-control border border-borderSubtle bg-white px-2 py-1 text-[10px] font-bold text-textPrimary transition hover:bg-bgmain dark:border-dark-border dark:bg-dark-elevated dark:text-dark-text-secondary dark:hover:text-dark-accent"
           >
             {lang === "en" ? "AR" : "EN"}
           </button>
@@ -201,15 +206,15 @@ function Navbar({
               <button
                 type="button"
                 onClick={() => setMenuOpen((v) => !v)}
-                className="flex items-center gap-2 rounded-full border border-borderSubtle bg-white/90 px-3 py-1 text-xs transition hover:bg-bgmain dark:border-slate-600 dark:bg-slate-800/90"
+                className="flex items-center gap-2 rounded-full border border-borderSubtle bg-white/90 px-3 py-1 text-xs transition hover:bg-bgmain dark:border-dark-border dark:bg-dark-elevated/90 dark:text-dark-text dark:hover:bg-dark-overlay"
               >
                 <span className="max-w-[100px] truncate font-medium">{user.name || user.email}</span>
                 <span className="text-[10px] opacity-50">▾</span>
               </button>
               {menuOpen && (
-                <div className="absolute right-0 mt-2 w-40 overflow-hidden rounded-card border border-borderSubtle bg-white shadow-card dark:border-slate-700 dark:bg-slate-800">
-                  <div className="border-b border-borderSubtle px-4 py-2 dark:border-slate-700">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-accentPrimary">
+                <div className="absolute right-0 mt-2 w-40 overflow-hidden rounded-card border border-borderSubtle bg-white shadow-card dark:border-dark-border dark:bg-dark-elevated dark:shadow-dark-card">
+                  <div className="border-b border-borderSubtle px-4 py-2 dark:border-dark-border">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-govsa-green dark:text-dark-accent">
                       {user.role}
                     </p>
                   </div>
@@ -259,20 +264,20 @@ function AuthPage({ lang, onAuthed }: { lang: Lang; onAuthed: (u: User) => void 
   }
 
   return (
-    <div className="flex min-h-[calc(100vh-60px)] items-center justify-center bg-bgmain px-4 py-10 text-textPrimary dark:bg-slate-900 dark:text-slate-100">
-      <div className="w-full max-w-md rounded-card border border-borderSubtle bg-white p-6 shadow-card dark:border-slate-700 dark:bg-slate-800">
-        <h1 className="text-center text-sm font-extrabold uppercase tracking-[0.28em] text-accentPrimary dark:text-emerald-400">
+    <div className="flex min-h-[calc(100vh-60px)] items-center justify-center bg-bgmain px-4 py-10 text-textPrimary dark:bg-dark-base dark:text-dark-text">
+      <div className="w-full max-w-md rounded-card border border-borderSubtle bg-white p-6 shadow-card dark:border-dark-border dark:bg-dark-surface dark:shadow-dark-card">
+        <h1 className="text-center text-sm font-extrabold uppercase tracking-[0.28em] text-govsa-green dark:text-dark-accent">
           UlcerVision
         </h1>
 
-        <div className="mt-4 inline-flex rounded-full border border-borderSubtle bg-bgmain p-1 dark:border-slate-600 dark:bg-slate-700/50">
+        <div className="mt-4 inline-flex rounded-full border border-borderSubtle bg-bgmain p-1 dark:border-dark-border dark:bg-dark-elevated">
           <button
             type="button"
             onClick={() => setMode("signin")}
             className={`w-24 rounded-full px-3 py-1 text-[0.7rem] transition ${
               mode === "signin"
-                ? "bg-accentPrimary font-semibold text-white shadow-sm"
-                : "text-textMuted hover:text-textPrimary dark:text-slate-300 dark:hover:text-slate-100"
+                ? "bg-govsa-green font-semibold text-white shadow-sm"
+                : "text-textMuted hover:text-textPrimary dark:text-dark-text-secondary dark:hover:text-dark-text"
             }`}
           >
             {tr.auth.signIn}
@@ -282,8 +287,8 @@ function AuthPage({ lang, onAuthed }: { lang: Lang; onAuthed: (u: User) => void 
             onClick={() => setMode("signup")}
             className={`w-24 rounded-full px-3 py-1 text-[0.7rem] transition ${
               mode === "signup"
-                ? "bg-accentPrimary font-semibold text-white shadow-sm"
-                : "text-textMuted hover:text-textPrimary dark:text-slate-300 dark:hover:text-slate-100"
+                ? "bg-govsa-green font-semibold text-white shadow-sm"
+                : "text-textMuted hover:text-textPrimary dark:text-dark-text-secondary dark:hover:text-dark-text"
             }`}
           >
             {tr.auth.signUp}
@@ -293,33 +298,33 @@ function AuthPage({ lang, onAuthed }: { lang: Lang; onAuthed: (u: User) => void 
         <div className="mt-4 space-y-3">
           {mode === "signup" && (
             <div>
-              <label className="mb-1 block text-[0.72rem] font-medium text-textMuted dark:text-slate-300">
+              <label className="mb-1 block text-[0.72rem] font-medium text-textMuted dark:text-dark-text-secondary">
                 {tr.auth.fullName}
               </label>
               <input
-                className="w-full rounded-control border border-borderSubtle bg-white px-3 py-2 text-xs text-textPrimary outline-none transition focus:border-accentPrimary focus:ring-1 focus:ring-accentPrimary/30 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
+                className="w-full rounded-control border border-borderSubtle bg-white px-3 py-2 text-xs text-textPrimary outline-none transition focus:border-govsa-green focus:ring-1 focus:ring-govsa-green/30 dark:border-dark-border dark:bg-dark-elevated dark:text-dark-text dark:focus:border-dark-accent dark:focus:ring-dark-accent/20"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
             </div>
           )}
           <div>
-            <label className="mb-1 block text-[0.72rem] font-medium text-textMuted dark:text-slate-300">
+            <label className="mb-1 block text-[0.72rem] font-medium text-textMuted dark:text-dark-text-secondary">
               {tr.auth.email}
             </label>
             <input
-              className="w-full rounded-control border border-borderSubtle bg-white px-3 py-2 text-xs text-textPrimary outline-none transition focus:border-accentPrimary focus:ring-1 focus:ring-accentPrimary/30 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
+              className="w-full rounded-control border border-borderSubtle bg-white px-3 py-2 text-xs text-textPrimary outline-none transition focus:border-govsa-green focus:ring-1 focus:ring-govsa-green/30 dark:border-dark-border dark:bg-dark-elevated dark:text-dark-text dark:focus:border-dark-accent dark:focus:ring-dark-accent/20"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
           </div>
           <div>
-            <label className="mb-1 block text-[0.72rem] font-medium text-textMuted dark:text-slate-300">
+            <label className="mb-1 block text-[0.72rem] font-medium text-textMuted dark:text-dark-text-secondary">
               {tr.auth.password}
             </label>
             <input
-              className="w-full rounded-control border border-borderSubtle bg-white px-3 py-2 text-xs text-textPrimary outline-none transition focus:border-accentPrimary focus:ring-1 focus:ring-accentPrimary/30 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
+              className="w-full rounded-control border border-borderSubtle bg-white px-3 py-2 text-xs text-textPrimary outline-none transition focus:border-govsa-green focus:ring-1 focus:ring-govsa-green/30 dark:border-dark-border dark:bg-dark-elevated dark:text-dark-text dark:focus:border-dark-accent dark:focus:ring-dark-accent/20"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -332,7 +337,7 @@ function AuthPage({ lang, onAuthed }: { lang: Lang; onAuthed: (u: User) => void 
             type="button"
             disabled={busy}
             onClick={submit}
-            className="mt-2 w-full rounded-full bg-accentPrimary py-2 text-[0.78rem] font-semibold uppercase tracking-[0.18em] text-white shadow-sm transition hover:bg-accentPrimaryHover disabled:opacity-60"
+            className="govsa-btn govsa-btn-primary mt-2 w-full disabled:opacity-60"
           >
             {busy ? "…" : mode === "signin" ? tr.auth.submitIn : tr.auth.submitUp}
           </button>
@@ -397,100 +402,108 @@ function HomePage({ lang, onUnauthorized }: { lang: Lang; onUnauthorized: () => 
   const confidencePercent = prediction ? Math.round(prediction.confidence * 100) : 0;
 
   return (
-    <main className="relative min-h-screen bg-bgmain dark:bg-slate-900">
-      <div className="mx-auto max-w-5xl px-4 pb-10 pt-10">
-        <div className="grid gap-4 md:grid-cols-[2fr,1.25fr]">
-          <div className="space-y-4">
-            <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-              <h2 className="font-display text-[0.78rem] font-semibold uppercase tracking-[0.18em] text-slate-900 dark:text-slate-100">
-                {tr.home.uploadTitle}
-              </h2>
-              <p className="mt-1 text-[0.78rem] text-slate-600 dark:text-slate-400">{tr.home.uploadDesc}</p>
+    <main className="relative min-h-screen bg-bgmain dark:bg-dark-base">
+      <div className="mx-auto max-w-3xl px-4 pb-16 pt-10">
+        <div className="flex flex-col items-center gap-6">
 
-              <label className="mt-3 flex cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center text-xs transition hover:border-emerald-500/80 hover:bg-emerald-50 dark:border-slate-600 dark:bg-slate-700/50 dark:hover:bg-emerald-900/20">
-                <p className="text-[0.86rem] font-medium text-slate-900 dark:text-slate-100">{tr.home.dragDrop}</p>
-                <span className="mt-1 inline-flex rounded-full border border-slate-300 px-3 py-1 text-[0.7rem] text-slate-600 bg-white dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300">
-                  {tr.home.browse}
-                </span>
-                <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFiles(e.target.files)} />
-              </label>
+          {/* ── Upload Card (centered & scaled up) ── */}
+          <section className="w-full rounded-2xl border border-slate-200 bg-white p-8 shadow-lg dark:border-dark-border dark:bg-dark-surface dark:shadow-dark-card">
+            <h2 className="text-center font-display text-base font-bold uppercase tracking-[0.22em] text-slate-900 dark:text-dark-text">
+              {tr.home.uploadTitle}
+            </h2>
+            <p className="mt-2 text-center text-sm text-slate-500 dark:text-dark-text-muted">{tr.home.uploadDesc}</p>
 
-              {file && (
-                <div className="mt-3 flex items-center gap-3 text-xs">
-                  {previewUrl && (
-                    <img src={previewUrl} alt="Preview" className="h-16 w-16 rounded-xl border border-slate-300 object-cover" />
-                  )}
-                  <div>
-                    <p className="text-slate-900 dark:text-slate-100">{file.name}</p>
-                    <button
-                      type="button"
-                      onClick={clearFile}
-                      className="mt-1 inline-flex items-center rounded-full border border-slate-300 px-3 py-1 text-[0.7rem] text-slate-700 hover:border-red-400 hover:bg-red-50 hover:text-red-700 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-red-900/30"
-                    >
-                      ✕ {tr.home.remove}
-                    </button>
-                  </div>
+            <label className="mt-5 flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center transition hover:border-govsa-green/80 hover:bg-govsa-green/5 dark:border-dark-border-light dark:bg-dark-elevated dark:hover:border-dark-accent/40 dark:hover:bg-dark-accent-dim">
+              <p className="text-lg font-semibold text-slate-900 dark:text-dark-text">{tr.home.dragDrop}</p>
+              <span className="mt-2 inline-flex rounded-full border border-slate-300 bg-white px-4 py-1.5 text-xs font-medium text-slate-600 dark:border-dark-border dark:bg-dark-overlay dark:text-dark-text-secondary">
+                {tr.home.browse}
+              </span>
+              <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFiles(e.target.files)} />
+            </label>
+
+            {file && (
+              <div className="mt-4 flex items-center gap-4">
+                {previewUrl && (
+                  <img src={previewUrl} alt="Preview" className="h-20 w-20 rounded-xl border border-slate-300 object-cover shadow-sm" />
+                )}
+                <div>
+                  <p className="text-sm font-medium text-slate-900 dark:text-dark-text">{file.name}</p>
+                  <button
+                    type="button"
+                    onClick={clearFile}
+                    className="mt-1.5 inline-flex items-center rounded-full border border-slate-300 px-3 py-1 text-xs text-slate-700 hover:border-red-400 hover:bg-red-50 hover:text-red-700 dark:border-dark-border dark:text-dark-text-secondary dark:hover:border-red-500/40 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+                  >
+                    ✕ {tr.home.remove}
+                  </button>
                 </div>
-              )}
+              </div>
+            )}
 
+            <div className="mt-6 flex justify-center">
               <button
                 type="button"
                 disabled={!file || predicting}
                 onClick={runPrediction}
-                className="mt-4 inline-flex items-center rounded-full bg-accentPrimary px-4 py-2 text-[0.8rem] font-semibold uppercase tracking-[0.18em] text-white shadow-sm transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60"
+                className="govsa-btn govsa-btn-primary shadow-md hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {predicting ? tr.home.running : tr.home.run}
               </button>
-            </section>
+            </div>
+          </section>
 
-            <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-              <h2 className="font-display text-[0.78rem] font-semibold uppercase tracking-[0.18em] text-slate-900 dark:text-slate-100">
-                {tr.home.triage}
-              </h2>
-              {prediction ? (
-                <div className="mt-4 space-y-3 text-[0.78rem]">
-                  <p className="text-slate-900 dark:text-slate-100">
-                    Predicted: <span className="font-medium">{prediction.predicted_class}</span>
-                  </p>
-                  <div className="h-2 w-full rounded-full border border-slate-200 bg-slate-100 dark:border-slate-600 dark:bg-slate-700">
-                    <div className="h-full rounded-full bg-gradient-to-r from-accentPrimary to-accentSecondary" style={{ width: `${confidencePercent}%` }} />
-                  </div>
-                  <p className="text-slate-600 dark:text-slate-400">{confidencePercent}% confidence</p>
-                  <p className="text-slate-600 dark:text-slate-300">{prediction.recommendation}</p>
+          {/* ── AI Triage Results ── */}
+          <section className="w-full rounded-2xl border border-slate-200 bg-white p-8 shadow-lg dark:border-dark-border dark:bg-dark-surface dark:shadow-dark-card">
+            <h2 className="text-center font-display text-base font-bold uppercase tracking-[0.22em] text-slate-900 dark:text-dark-text">
+              {tr.home.triage}
+            </h2>
+            {prediction ? (
+              <div className="mx-auto mt-5 max-w-lg space-y-4 text-sm">
+                <p className="text-center text-lg text-slate-900 dark:text-dark-text">
+                  Predicted: <span className="font-bold text-govsa-green dark:text-dark-accent">{prediction.predicted_class}</span>
+                </p>
+                <div className="h-3 w-full rounded-full border border-slate-200 bg-slate-100 dark:border-dark-border dark:bg-dark-elevated">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-govsa-green to-govsa-blue transition-all duration-500"
+                    style={{ width: `${confidencePercent}%` }}
+                  />
                 </div>
-              ) : (
-                <p className="mt-3 text-[0.78rem] text-slate-600 dark:text-slate-400">—</p>
-              )}
-            </section>
-          </div>
+                <p className="text-center text-base font-semibold text-slate-700 dark:text-dark-text-secondary">{confidencePercent}% confidence</p>
+                <p className="text-center text-sm leading-relaxed text-slate-600 dark:text-dark-text-muted">{prediction.recommendation}</p>
+              </div>
+            ) : (
+              <p className="mt-4 text-center text-sm text-slate-400 dark:text-dark-text-muted">
+                Upload an image and run prediction to see results.
+              </p>
+            )}
+          </section>
 
-          <div className="space-y-4">
-            <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-              <h2 className="font-display text-[0.78rem] font-semibold uppercase tracking-[0.18em] text-slate-900 dark:text-slate-100">
-                {tr.home.recent}
-              </h2>
-              {historyLoading ? (
-                <p className="mt-3 text-[0.78rem] text-slate-500 dark:text-slate-400">Loading…</p>
-              ) : history.length === 0 ? (
-                <p className="mt-3 text-[0.78rem] text-slate-600 dark:text-slate-400">{tr.home.empty}</p>
-              ) : (
-                <div className="mt-3 max-h-72 space-y-2 overflow-y-auto text-[0.76rem]">
-                  {history.map((h) => (
-                    <div key={h.id} className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-2.5 py-2 dark:border-slate-600 dark:bg-slate-700">
-                      <div className="h-10 w-10 rounded-lg border border-slate-200 bg-slate-100 dark:border-slate-600 dark:bg-slate-600" />
-                      <div className="flex-1">
-                        <p className="truncate text-slate-900 dark:text-slate-100">{h.file_name}</p>
-                        <p className="text-[0.7rem] text-slate-600 dark:text-slate-400">{formatDateShort(h.created_at)}</p>
-                      </div>
-                      <span className="rounded-full border border-slate-300 px-2.5 py-1 text-[0.7rem] text-slate-700 bg-slate-50 dark:border-slate-600 dark:bg-slate-600 dark:text-slate-300">
-                        {h.risk || "—"}
-                      </span>
+          {/* ── Recent Scans ── */}
+          <section className="w-full rounded-2xl border border-slate-200 bg-white p-8 shadow-lg dark:border-dark-border dark:bg-dark-surface dark:shadow-dark-card">
+            <h2 className="text-center font-display text-base font-bold uppercase tracking-[0.22em] text-slate-900 dark:text-dark-text">
+              {tr.home.recent}
+            </h2>
+            {historyLoading ? (
+              <p className="mt-4 text-center text-sm text-slate-500 dark:text-dark-text-muted">Loading…</p>
+            ) : history.length === 0 ? (
+              <p className="mt-4 text-center text-sm text-slate-500 dark:text-dark-text-muted">{tr.home.empty}</p>
+            ) : (
+              <div className="mt-5 space-y-2.5 text-sm">
+                {history.map((h) => (
+                  <div key={h.id} className="flex items-center gap-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 transition hover:bg-slate-100 dark:border-dark-border dark:bg-dark-elevated dark:hover:bg-dark-overlay">
+                    <div className="h-11 w-11 flex-shrink-0 rounded-lg border border-slate-200 bg-slate-200 dark:border-dark-border dark:bg-dark-overlay" />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium text-slate-900 dark:text-dark-text">{h.file_name}</p>
+                      <p className="text-xs text-slate-500 dark:text-dark-text-muted">{formatDateShort(h.created_at)}</p>
                     </div>
-                  ))}
-                </div>
-              )}
-            </section>
-          </div>
+                    <span className="flex-shrink-0 rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-700 dark:border-dark-border dark:bg-dark-overlay dark:text-dark-text-secondary">
+                      {h.risk || "—"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
         </div>
       </div>
     </main>
@@ -535,14 +548,14 @@ function AdminPage({ lang }: { lang: Lang }) {
   }, [tab]);
 
   return (
-    <main className="min-h-screen bg-bgmain px-4 py-10 dark:bg-slate-900">
+    <main className="min-h-screen bg-bgmain px-4 py-10 dark:bg-dark-base">
       <div className="mx-auto max-w-5xl">
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800 shadow-xl">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4 dark:border-slate-700">
-            <h1 className="text-lg font-bold text-accentPrimary">
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 dark:border-dark-border dark:bg-dark-surface shadow-xl dark:shadow-dark-card">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4 dark:border-dark-border">
+            <h1 className="text-lg font-bold text-govsa-green dark:text-dark-accent">
               Admin Portal
             </h1>
-            <div className="inline-flex rounded-full border border-slate-200 bg-slate-50 p-1 text-xs dark:border-slate-600 dark:bg-slate-800">
+            <div className="inline-flex rounded-full border border-slate-200 bg-slate-50 p-1 text-xs dark:border-dark-border dark:bg-dark-elevated">
               {(["dashboard", "users", "logs"] as const).map((k) => (
                 <button
                   key={k}
@@ -550,8 +563,8 @@ function AdminPage({ lang }: { lang: Lang }) {
                   onClick={() => setTab(k)}
                   className={`rounded-full px-4 py-1.5 transition-all ${
                     tab === k
-                      ? "bg-accentPrimary font-bold text-white shadow-md"
-                      : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+                      ? "bg-govsa-green font-bold text-white shadow-md"
+                      : "text-slate-500 hover:text-slate-900 dark:text-dark-text-muted dark:hover:text-dark-text"
                   }`}
                 >
                   {k.charAt(0).toUpperCase() + k.slice(1)}
@@ -565,26 +578,26 @@ function AdminPage({ lang }: { lang: Lang }) {
 
           {!loading && tab === "dashboard" && stats && (
             <div className="mt-6 grid gap-4 md:grid-cols-3">
-              <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900/40">
+              <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm dark:border-dark-border dark:bg-dark-elevated">
                 <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Total Users</p>
                 <p className="mt-2 text-3xl font-black text-slate-900 dark:text-white">{stats.totalUsers}</p>
               </div>
-              <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900/40">
+              <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm dark:border-dark-border dark:bg-dark-elevated">
                 <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Total Scans</p>
                 <p className="mt-2 text-3xl font-black text-slate-900 dark:text-white">{stats.totalScans}</p>
               </div>
-              <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900/40">
+              <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm dark:border-dark-border dark:bg-dark-elevated">
                 <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Success Rate</p>
-                <p className="mt-2 text-3xl font-black text-emerald-500">
+                <p className="mt-2 text-3xl font-black text-govsa-green dark:text-dark-accent">
                   {stats.totalScans > 0 ? Math.round((stats.scansProcessed / stats.totalScans) * 100) : 0}%
                 </p>
               </div>
 
-              <div className="md:col-span-3 rounded-2xl border border-slate-100 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900/40">
+              <div className="md:col-span-3 rounded-2xl border border-slate-100 bg-white p-6 shadow-sm dark:border-dark-border dark:bg-dark-elevated">
                 <p className="text-sm font-bold text-slate-900 dark:text-white mb-4">Diagnosis Distribution</p>
                 <div className="grid gap-3 sm:grid-cols-4">
                   {(["none", "infection", "ischemia", "both"] as const).map((k) => (
-                    <div key={k} className="rounded-xl bg-slate-50 p-4 dark:bg-slate-800/50">
+                    <div key={k} className="rounded-xl bg-slate-50 p-4 dark:bg-dark-overlay">
                       <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{k}</p>
                       <p className="mt-1 text-xl font-bold text-slate-900 dark:text-white">{stats.predictionCounts?.[k] ?? 0}</p>
                     </div>
@@ -595,9 +608,9 @@ function AdminPage({ lang }: { lang: Lang }) {
           )}
 
           {!loading && tab === "users" && (
-            <div className="mt-6 overflow-hidden rounded-xl border border-slate-100 dark:border-slate-700">
+            <div className="mt-6 overflow-hidden rounded-xl border border-slate-100 dark:border-dark-border">
               <table className="w-full text-left text-sm">
-                <thead className="bg-slate-50 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:bg-slate-800/50">
+                <thead className="bg-slate-50 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:bg-dark-elevated dark:text-dark-text-muted">
                   <tr>
                     <th className="px-6 py-4">Name</th>
                     <th className="px-6 py-4">Email</th>
@@ -606,11 +619,11 @@ function AdminPage({ lang }: { lang: Lang }) {
                     <th className="px-6 py-4">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                <tbody className="divide-y divide-slate-100 dark:divide-dark-border">
                   {users.map((u) => (
-                    <tr key={u.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                    <tr key={u.id} className="hover:bg-slate-50/50 dark:hover:bg-dark-elevated/50 transition-colors">
                       <td className="px-6 py-4 font-medium dark:text-white">{u.name || "—"}</td>
-                      <td className="px-6 py-4 text-slate-500 dark:text-slate-400">{u.email}</td>
+                      <td className="px-6 py-4 text-slate-500 dark:text-dark-text-secondary">{u.email}</td>
                       <td className="px-6 py-4">
                         <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
                           u.role === "admin" ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700"
@@ -645,9 +658,9 @@ function AdminPage({ lang }: { lang: Lang }) {
 
           {!loading && tab === "logs" && (
             <div className="mt-6 space-y-4">
-              <div className="overflow-hidden rounded-xl border border-slate-100 dark:border-slate-700">
+              <div className="overflow-hidden rounded-xl border border-slate-100 dark:border-dark-border">
                 <table className="w-full text-left text-sm">
-                  <thead className="bg-slate-50 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:bg-slate-800/50">
+                  <thead className="bg-slate-50 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:bg-dark-elevated dark:text-dark-text-muted">
                     <tr>
                       <th className="px-6 py-4">Scan ID</th>
                       <th className="px-6 py-4">User</th>
@@ -656,9 +669,9 @@ function AdminPage({ lang }: { lang: Lang }) {
                       <th className="px-6 py-4">Date</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                  <tbody className="divide-y divide-slate-100 dark:divide-dark-border">
                     {logs.map((log) => (
-                      <tr key={log.scan_id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                      <tr key={log.scan_id} className="hover:bg-slate-50/50 dark:hover:bg-dark-elevated/50 transition-colors">
                         <td className="px-6 py-4 font-mono text-xs">#{log.scan_id}</td>
                         <td className="px-6 py-4">
                           <div className="flex flex-col">
@@ -675,16 +688,16 @@ function AdminPage({ lang }: { lang: Lang }) {
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
-                            <div className="h-1.5 w-12 rounded-full bg-slate-100 dark:bg-slate-700">
+                            <div className="h-1.5 w-12 rounded-full bg-slate-100 dark:bg-dark-overlay">
                               <div 
-                                className="h-full rounded-full bg-accentPrimary" 
+                                className="h-full rounded-full bg-govsa-green" 
                                 style={{ width: `${(log.confidence || 0) * 100}%` }}
                               />
                             </div>
                             <span className="text-xs font-mono">{Math.round((log.confidence || 0) * 100)}%</span>
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-xs text-slate-500 dark:text-slate-400">
+                        <td className="px-6 py-4 text-xs text-slate-500 dark:text-dark-text-muted">
                           {formatDateShort(log.uploaded_at)}
                         </td>
                       </tr>
@@ -703,12 +716,12 @@ function AdminPage({ lang }: { lang: Lang }) {
 function AboutPage({ lang }: { lang: Lang }) {
   const isAr = lang === "ar";
   return (
-    <main className="min-h-screen bg-bgmain px-4 py-20 dark:bg-slate-900">
+    <main className="min-h-screen bg-white px-4 py-20 dark:bg-dark-base">
       <div className="mx-auto max-w-3xl text-center">
-        <h1 className="text-4xl font-black text-accentPrimary dark:text-emerald-400 mb-6">
+        <h1 className="text-4xl font-black text-govsa-green dark:text-dark-accent mb-6">
           {isAr ? "عن UlcerVision" : "About UlcerVision"}
         </h1>
-        <div className="space-y-6 text-lg text-slate-600 dark:text-slate-300 leading-relaxed">
+        <div className="space-y-6 text-lg text-slate-600 dark:text-dark-text-secondary leading-relaxed">
           <p>
             {isAr 
               ? "UlcerVision هو نظام متقدم مدعوم بالذكاء الاصطناعي مصمم لمساعدة المتخصصين في الرعاية الصحية في الكشف المبكر وتصنيف قرح القدم السكري (DFU)."
@@ -720,17 +733,17 @@ function AboutPage({ lang }: { lang: Lang }) {
               : "Our technology utilizes cutting-edge deep learning models to analyze foot images and identify potential risks such as infection and ischemia, helping to provide the right care at the right time."}
           </p>
           <div className="pt-10 grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="p-6 rounded-2xl bg-white dark:bg-slate-800 shadow-xl border border-slate-100 dark:border-slate-700">
+            <div className="p-6 rounded-2xl bg-white dark:bg-dark-surface shadow-xl dark:shadow-dark-card border border-slate-100 dark:border-dark-border">
               <div className="text-3xl mb-4">🚀</div>
               <h3 className="font-bold text-slate-900 dark:text-white mb-2">{isAr ? "سرعة" : "Speed"}</h3>
               <p className="text-sm">{isAr ? "نتائج فورية في ثوانٍ معدودة." : "Instant results in just seconds."}</p>
             </div>
-            <div className="p-6 rounded-2xl bg-white dark:bg-slate-800 shadow-xl border border-slate-100 dark:border-slate-700">
+            <div className="p-6 rounded-2xl bg-white dark:bg-dark-surface shadow-xl dark:shadow-dark-card border border-slate-100 dark:border-dark-border">
               <div className="text-3xl mb-4">🎯</div>
               <h3 className="font-bold text-slate-900 dark:text-white mb-2">{isAr ? "دقة" : "Accuracy"}</h3>
               <p className="text-sm">{isAr ? "تحليل دقيق يعتمد على آلاف الحالات." : "Precise analysis based on thousands of cases."}</p>
             </div>
-            <div className="p-6 rounded-2xl bg-white dark:bg-slate-800 shadow-xl border border-slate-100 dark:border-slate-700">
+            <div className="p-6 rounded-2xl bg-white dark:bg-dark-surface shadow-xl dark:shadow-dark-card border border-slate-100 dark:border-dark-border">
               <div className="text-3xl mb-4">🛡️</div>
               <h3 className="font-bold text-slate-900 dark:text-white mb-2">{isAr ? "أمان" : "Safety"}</h3>
               <p className="text-sm">{isAr ? "حماية تامة لبيانات المرضى." : "Full protection for patient data."}</p>
@@ -805,7 +818,7 @@ export default function IndexPage() {
   }, [user, page, lang, onUnauthorized]);
 
   return (
-    <div className="flex min-h-screen flex-col bg-bgmain dark:bg-slate-900">
+    <div className="flex min-h-screen flex-col bg-bgmain dark:bg-dark-base">
       <Navbar user={user} page={page} setPage={safeSetPage} theme={theme} setTheme={setTheme} lang={lang} setLang={setLang} onSignOut={onSignOut} />
       {content}
     </div>
