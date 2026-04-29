@@ -457,19 +457,31 @@ function HomePage({ lang, onUnauthorized }: { lang: Lang; onUnauthorized: () => 
               {tr.home.triage}
             </h2>
             {prediction ? (
-              <div className="mx-auto mt-5 max-w-lg space-y-4 text-sm">
-                <p className="text-center text-lg text-slate-900 dark:text-dark-text">
-                  Predicted: <span className="font-bold text-govsa-green dark:text-dark-accent">{prediction.predicted_class}</span>
-                </p>
-                <div className="h-3 w-full rounded-full border border-slate-200 bg-slate-100 dark:border-dark-border dark:bg-dark-elevated">
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-govsa-green to-govsa-blue transition-all duration-500"
-                    style={{ width: `${confidencePercent}%` }}
-                  />
+              prediction.predicted_class === "pending" ? (
+                <div className="mx-auto mt-5 max-w-lg space-y-3 text-center">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-amber-300 bg-amber-50 px-4 py-2 dark:border-amber-500/30 dark:bg-amber-900/20">
+                    <span className="text-lg">⚠️</span>
+                    <span className="text-sm font-semibold text-amber-700 dark:text-amber-400">Analysis server unavailable</span>
+                  </div>
+                  <p className="text-sm text-slate-500 dark:text-dark-text-muted">
+                    Your image was saved successfully. The AI model server is currently offline — please try again later or contact the administrator.
+                  </p>
                 </div>
-                <p className="text-center text-base font-semibold text-slate-700 dark:text-dark-text-secondary">{confidencePercent}% confidence</p>
-                <p className="text-center text-sm leading-relaxed text-slate-600 dark:text-dark-text-muted">{prediction.recommendation}</p>
-              </div>
+              ) : (
+                <div className="mx-auto mt-5 max-w-lg space-y-4 text-sm">
+                  <p className="text-center text-lg text-slate-900 dark:text-dark-text">
+                    Predicted: <span className="font-bold text-govsa-green dark:text-dark-accent">{prediction.predicted_class}</span>
+                  </p>
+                  <div className="h-3 w-full rounded-full border border-slate-200 bg-slate-100 dark:border-dark-border dark:bg-dark-elevated">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-govsa-green to-govsa-blue transition-all duration-500"
+                      style={{ width: `${confidencePercent}%` }}
+                    />
+                  </div>
+                  <p className="text-center text-base font-semibold text-slate-700 dark:text-dark-text-secondary">{confidencePercent}% confidence</p>
+                  <p className="text-center text-sm leading-relaxed text-slate-600 dark:text-dark-text-muted">{prediction.recommendation}</p>
+                </div>
+              )
             ) : (
               <p className="mt-4 text-center text-sm text-slate-400 dark:text-dark-text-muted">
                 Upload an image and run prediction to see results.

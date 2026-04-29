@@ -47,8 +47,16 @@ export async function POST(req) {
 
     // Create a fresh Blob from the buffer for the FastAPI call
     const blob = new Blob([buffer], { type: image.type || "image/jpeg" });
-    const predictData = await callPredict(blob, image.name);
-    const normalized = normalizePredictResponse(predictData);
+    let normalized;
+    let backendWarning = null;
+    try {
+      const predictData = await callPredict(blob, image.name);
+      normalized = normalizePredictResponse(predictData);
+    } catch (predictErr) {
+      console.error("[scans/upload] Prediction backend error:", predictErr.message);
+      backendWarning = predictErr.message;
+      normalized = { prediction: "pending", confidence: 0, raw: {}, modelVersion: "unavailable" };
+    }
 
     db.prepare(
       "INSERT INTO scan_results (scan_id, prediction, confidence, raw_probabilities, model_version) VALUES (?, ?, ?, ?, ?)"
@@ -69,6 +77,7 @@ export async function POST(req) {
       confidence: normalized.confidence,
       raw_probabilities: normalized.raw,
       model_version: normalized.modelVersion,
+      ...(backendWarning ? { warning: backendWarning } : {}),
     });
   } catch (err) {
     console.error("[scans/upload] Error:", err);

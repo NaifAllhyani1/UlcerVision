@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "backend": "powershell -ExecutionPolicy Bypass -File ./run_backend.ps1",
-    "dev:all": "start cmd /c \"powershell -ExecutionPolicy Bypass -File ./run_backend.ps1\" && next dev"
+    "dev:all": "start /b powershell -WindowStyle Hidden -ExecutionPolicy Bypass -File ./run_backend.ps1 && next dev"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
