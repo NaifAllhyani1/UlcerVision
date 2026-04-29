@@ -1,0 +1,25 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bgmain: #F7F8FA;
+  --surface: #FFFFFF;
+  --border: #E5E7EB;
+  --text: #0F172A;
+  --muted: #475569;
+  --primary: #006C35;
+  --primaryHover: #005A2C;
+  --secondary: #B88A2A;
+}
+
+.bg-bgmain {
+  background: var(--bgmain);
+}
+
+/* Better default typography for Arabic + Latin */
+html {
+  font-family: "IBM Plex Sans Arabic", "Tajawal", "Cairo", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  color: var(--text);
+}
+

@@ -1,0 +1,48 @@
+# Dependencies
+node_modules/
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Build
+.next/
+dist/
+build/
+out/
+
+# Python
+backend/.venv/
+backend/__pycache__/
+__pycache__/
+*.pyc
+
+# Model weights (too large for Git — use Git LFS or share separately)
+*.pt
+
+# Database (auto-created on first run)
+database/*.db
+
+# Uploads (user content)
+public/uploads/*
+!public/uploads/.gitkeep
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Gemini / AI tools
+.gemini/
