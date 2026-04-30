@@ -88,9 +88,6 @@ Write-Host ""
 # --- Start uvicorn ---
 Set-Location $BackendDir
 & $VenvPython -m uvicorn main:app --host $HostAddr --port $Port --reload
-# --- Start uvicorn ---
-Set-Location $BackendDir
-& $VenvPython -m uvicorn main:app --host $Host_ --port $Port --reload
 
 # --- Server stopped ---
 Write-Host ""
