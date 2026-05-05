@@ -195,9 +195,14 @@ pip install -r requirements.txt
 
 ### 4. Model weights
 
-Place the trained model weights file in the `backend/` directory:
-- Expected filename: `tiny-swin with zero-shot.pt`
-- This file is **~365 MB** and is not included in the repository
+Place your trained model weights file (e.g., `bestmodel.pt`) in the `backend/model/` directory:
+
+1. Create a `model` directory inside `backend/` if it doesn't exist (e.g., `backend/model/`).
+2. Place your `bestmodel.pt` file inside `backend/model/`.
+3. Open or create the `backend/.env` file and set the `MODEL_PATH` variable to point to your new file:
+   ```env
+   MODEL_PATH=model/bestmodel.pt
+   ```
 
 > **Note**: The model weights file is too large for GitHub. See [Deployment Notes](#deployment-notes) for options.
 
@@ -205,51 +210,45 @@ Place the trained model weights file in the `backend/` directory:
 
 ## Running the Application
 
-You need **two servers** running simultaneously:
+The easiest way to run the entire project (both frontend and backend simultaneously) is to use the provided `npm` script. 
 
-### Option 1: One-click scripts
-
-**Windows (double-click):**
-```
-run_backend.bat
-```
-
-**PowerShell:**
-```powershell
-.\run_backend.ps1
-```
-
-Then in a separate terminal:
+### The Recommended Way
+Run the following command from the root `UlcerVision` directory:
 ```bash
-npm run dev
+npm run dev:all
 ```
+*This command uses `concurrently` to launch the Next.js frontend on port 3000 and the FastAPI backend on port 8000 in a single terminal window.*
 
-### Option 2: npm scripts
+### Alternative Options
+<details>
+<summary>Click to view manual or separate startup methods</summary>
 
+**Option A: Separate npm scripts**
 ```bash
 # Start backend only
 npm run backend
 
 # Start frontend only
 npm run dev
-
-# Start both at once (Windows)
-npm run dev:all
 ```
 
-### Option 3: Manual
+**Option B: One-click scripts (Windows)**
+- **Command Prompt:** Run `run_backend.bat`
+- **PowerShell:** Run `.\run_backend.ps1`
+Then in a separate terminal, run `npm run dev`
 
+**Option C: Fully Manual**
 **Terminal 1 — Backend (Python):**
 ```bash
 cd backend
 .venv\Scripts\activate
 uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
-
 **Terminal 2 — Frontend (Next.js):**
 ```bash
 npm run dev
 ```
+</details>
 
 ### Access the application
 
@@ -453,7 +452,7 @@ CREATE TABLE model_registry (
 | Variable | Default | Description |
 |---|---|---|
 | `JWT_SECRET` | `dev-only-change-this-secret` | Secret key for JWT token signing |
-| `MODEL_WEIGHTS` | `backend/tiny-swin with zero-shot.pt` | Path to model weights file |
+| `MODEL_PATH` | `model/model.pt` | Path to model weights file (configured in `backend/.env`) |
 | `FASTAPI_URL` | `http://localhost:8000` | URL of the Python backend |
 | `NODE_ENV` | `development` | Node environment |
 
