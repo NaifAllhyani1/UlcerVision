@@ -16,7 +16,7 @@ $BackendDir = Join-Path $PSScriptRoot "backend"
 $VenvDir = Join-Path $BackendDir ".venv"
 $VenvPython = Join-Path $VenvDir "Scripts\python.exe"
 $RequirementsFile = Join-Path $BackendDir "requirements.txt"
-$WeightsFile = Join-Path $BackendDir "tiny-swin with zero-shot.pt"
+$WeightsFile = Join-Path $BackendDir "model\model.pt"
 $HostAddr = "0.0.0.0"
 $Port = 8000
 
@@ -72,7 +72,7 @@ Write-Host "[OK] Dependencies are up to date." -ForegroundColor Green
 Write-Host ""
 
 # --- Set model weights env var ---
-$env:MODEL_WEIGHTS = $WeightsFile
+$env:MODEL_PATH = $WeightsFile
 
 # --- Display server info ---
 Write-Host "==================================================" -ForegroundColor DarkCyan

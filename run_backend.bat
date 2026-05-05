@@ -17,7 +17,7 @@ set "BACKEND_DIR=%~dp0backend"
 set "VENV_DIR=%BACKEND_DIR%\.venv"
 set "HOST=0.0.0.0"
 set "PORT=8000"
-set "WEIGHTS_FILE=%BACKEND_DIR%\tiny-swin with zero-shot.pt"
+set "WEIGHTS_FILE=%BACKEND_DIR%\model\model.pt"
 
 REM --- Check backend directory exists ------------------------------
 if not exist "%BACKEND_DIR%" (
@@ -65,7 +65,7 @@ echo [INFO] Dependencies are up to date.
 echo.
 
 REM --- Set environment variable for model weights -------------------
-set "MODEL_WEIGHTS=%WEIGHTS_FILE%"
+set "MODEL_PATH=%WEIGHTS_FILE%"
 
 REM --- Start the server --------------------------------------------
 echo ══════════════════════════════════════════════════

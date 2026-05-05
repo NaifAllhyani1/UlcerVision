@@ -25,7 +25,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("image-classification-api")
 
 BASE_DIR = Path(__file__).resolve().parent
-WEIGHTS_FILE = Path(os.getenv("MODEL_WEIGHTS", BASE_DIR / "tiny-swin with zero-shot.pt"))
+WEIGHTS_FILE = Path(os.getenv("MODEL_PATH", BASE_DIR / "model" / "model.pt"))
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
