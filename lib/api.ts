@@ -15,6 +15,7 @@ export type PredictResponse = {
   top_classes: { name: string; prob: number }[];
   recommendation: string;
   scan_id: number;
+  is_ood: boolean;
 };
 
 export type AdminStats = {
@@ -123,6 +124,7 @@ export async function predict(file: File): Promise<PredictResponse> {
   const body = await res.json();
   const predicted = String(body.prediction || "none");
   const conf = typeof body.confidence === "number" ? body.confidence : 0;
+  const isOod = body.is_ood === true;
   const risk = riskFromPrediction(predicted, conf);
   return {
     predicted_class: predicted,
@@ -131,6 +133,7 @@ export async function predict(file: File): Promise<PredictResponse> {
     top_classes: topClassesFromRaw(body.raw_probabilities),
     recommendation: recommendation(risk),
     scan_id: Number(body.scanId || 0),
+    is_ood: isOod,
   };
 }
 

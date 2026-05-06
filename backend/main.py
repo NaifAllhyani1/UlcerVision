@@ -16,7 +16,6 @@ from model import (
     CLASS_DESCRIPTIONS,
     CLASS_NAMES,
     CLIP_MODEL,
-    OOD_THRESHOLD,
     SWIN_MODEL,
     create_model,
 )
@@ -122,19 +121,27 @@ def run_inference(img: Image.Image) -> PredictResponse:
         raise HTTPException(status_code=503, detail=f"Model not ready: {state.load_error or 'not loaded'}")
 
     pixel_values = state.image_processor(images=img, return_tensors="pt")["pixel_values"].to(DEVICE)
+
+    # DFU class logits and softmax
     logits = state.model(pixel_values, state.text_input_ids, state.text_attention_mask)
     probs = torch.softmax(logits, dim=1).squeeze(0)
     conf, idx = torch.max(probs, dim=0)
     idx_int = int(idx.item())
 
+    # Calculate cosine similarities for diagnostics
     img_emb = state.model.encode_image(pixel_values)
-    txt_embs = state.model.encode_text(state.text_input_ids, state.text_attention_mask)
-    cos_sims = img_emb @ txt_embs.T
-    max_similarity = float(cos_sims.max(dim=1).values.item())
-    is_ood = bool(max_similarity < OOD_THRESHOLD)
+    dfu_embs = state.model.encode_text(state.text_input_ids, state.text_attention_mask)
+    dfu_sims = (img_emb @ dfu_embs.T).squeeze(0)
+    best_dfu_sim = float(dfu_sims.max().item())
 
-    if is_ood:
-        idx_int = 0
+    # OOD detection disabled for now until model is retrained to support it
+    is_ood = False
+
+    logger.info(
+        "Prediction: max_softmax=%.4f, is_ood=%s, dfu_sims=%s",
+        float(conf.item()), is_ood,
+        {n: round(float(s), 4) for n, s in zip(CLASS_NAMES, dfu_sims.tolist())},
+    )
 
     pred_name = CLASS_NAMES[idx_int]
     probs_cpu = probs.detach().cpu().tolist()
@@ -146,7 +153,7 @@ def run_inference(img: Image.Image) -> PredictResponse:
         confidence=float(conf.item()),
         probabilities=prob_map,
         logits=[float(x) for x in logits_cpu],
-        max_similarity=max_similarity,
+        max_similarity=best_dfu_sim,
         is_ood=is_ood,
     )
 

@@ -8,7 +8,6 @@ SWIN_MODEL = "microsoft/swin-tiny-patch4-window7-224"
 CLIP_MODEL = "openai/clip-vit-base-patch32"
 EMBED_DIM = 128
 FREEZE_SWIN_STAGES = 2
-OOD_THRESHOLD = 0.20
 CLASS_NAMES = ["none", "infection", "ischemia", "both"]
 
 CLASS_DESCRIPTIONS = {
@@ -132,20 +131,19 @@ class DFUZeroShotModel(nn.Module):
         pixel_values: torch.Tensor,
         text_input_ids: torch.Tensor,
         text_attention_masks: torch.Tensor,
-        ood_threshold: float = OOD_THRESHOLD,
-    ) -> tuple[torch.Tensor, list[str], torch.Tensor, torch.Tensor]:
+    ) -> tuple[torch.Tensor, list[str], torch.Tensor]:
+        """Return (predicted_indices, class_names, max_cosine_sims).
+        OOD detection is handled externally via negative reference descriptions.
+        """
         self.eval()
         img_emb = self.encode_image(pixel_values)
         txt_embs = self.encode_text(text_input_ids, text_attention_masks)
 
         cos_sims = img_emb @ txt_embs.T
-        max_sims, _ = cos_sims.max(dim=1)
         preds = cos_sims.argmax(dim=1)
-
-        is_ood = max_sims < ood_threshold
-        preds[is_ood] = 0
+        max_sims, _ = cos_sims.max(dim=1)
         names = [CLASS_NAMES[p.item()] for p in preds]
-        return preds, names, max_sims, is_ood
+        return preds, names, max_sims
 
 
 def create_model() -> nn.Module:

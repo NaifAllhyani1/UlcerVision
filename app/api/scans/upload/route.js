@@ -21,7 +21,9 @@ function normalizePredictResponse(data) {
   const confidence = typeof data?.confidence === "number" ? data.confidence : 0;
   const raw = data?.probabilities ?? data?.raw_probabilities ?? {};
   const modelVersion = data?.model_version ?? "unknown";
-  return { prediction, confidence, raw, modelVersion };
+  const isOod = data?.is_ood === true;
+  const maxSimilarity = typeof data?.max_similarity === "number" ? data.max_similarity : null;
+  return { prediction, confidence, raw, modelVersion, isOod, maxSimilarity };
 }
 
 export async function POST(req) {
@@ -77,6 +79,8 @@ export async function POST(req) {
       confidence: normalized.confidence,
       raw_probabilities: normalized.raw,
       model_version: normalized.modelVersion,
+      is_ood: normalized.isOod,
+      max_similarity: normalized.maxSimilarity,
       ...(backendWarning ? { warning: backendWarning } : {}),
     });
   } catch (err) {

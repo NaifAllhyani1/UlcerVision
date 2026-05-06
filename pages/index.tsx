@@ -13,6 +13,7 @@ type Prediction = {
   confidence: number;
   top_classes: TopClass[];
   recommendation: string;
+  is_ood: boolean;
 };
 
 type Page = "auth" | "home" | "admin" | "about";
@@ -148,22 +149,20 @@ function Navbar({
               <button
                 type="button"
                 onClick={() => setPage("home")}
-                className={`px-3 py-1 text-xs transition-all ${
-                  page === "home"
+                className={`px-3 py-1 text-xs transition-all ${page === "home"
                     ? "font-bold text-govsa-green border-b-2 border-govsa-green dark:text-dark-accent dark:border-dark-accent"
                     : "text-textMuted hover:text-textPrimary dark:text-dark-text-secondary dark:hover:text-dark-text"
-                }`}
+                  }`}
               >
                 {tr.nav.home}
               </button>
               <button
                 type="button"
                 onClick={() => setPage("about")}
-                className={`px-3 py-1 text-xs transition-all ${
-                  page === "about"
+                className={`px-3 py-1 text-xs transition-all ${page === "about"
                     ? "font-bold text-govsa-green border-b-2 border-govsa-green dark:text-dark-accent dark:border-dark-accent"
                     : "text-textMuted hover:text-textPrimary dark:text-dark-text-secondary dark:hover:text-dark-text"
-                }`}
+                  }`}
               >
                 {tr.nav.about}
               </button>
@@ -171,11 +170,10 @@ function Navbar({
                 <button
                   type="button"
                   onClick={() => setPage("admin")}
-                  className={`px-3 py-1 text-xs transition-all ${
-                    page === "admin"
+                  className={`px-3 py-1 text-xs transition-all ${page === "admin"
                       ? "font-bold text-govsa-green border-b-2 border-govsa-green dark:text-dark-accent dark:border-dark-accent"
                       : "text-textMuted hover:text-textPrimary dark:text-dark-text-secondary dark:hover:text-dark-text"
-                  }`}
+                    }`}
                 >
                   {tr.nav.admin}
                 </button>
@@ -274,22 +272,20 @@ function AuthPage({ lang, onAuthed }: { lang: Lang; onAuthed: (u: User) => void 
           <button
             type="button"
             onClick={() => setMode("signin")}
-            className={`w-24 rounded-full px-3 py-1 text-[0.7rem] transition ${
-              mode === "signin"
+            className={`w-24 rounded-full px-3 py-1 text-[0.7rem] transition ${mode === "signin"
                 ? "bg-govsa-green font-semibold text-white shadow-sm"
                 : "text-textMuted hover:text-textPrimary dark:text-dark-text-secondary dark:hover:text-dark-text"
-            }`}
+              }`}
           >
             {tr.auth.signIn}
           </button>
           <button
             type="button"
             onClick={() => setMode("signup")}
-            className={`w-24 rounded-full px-3 py-1 text-[0.7rem] transition ${
-              mode === "signup"
+            className={`w-24 rounded-full px-3 py-1 text-[0.7rem] transition ${mode === "signup"
                 ? "bg-govsa-green font-semibold text-white shadow-sm"
                 : "text-textMuted hover:text-textPrimary dark:text-dark-text-secondary dark:hover:text-dark-text"
-            }`}
+              }`}
           >
             {tr.auth.signUp}
           </button>
@@ -467,6 +463,16 @@ function HomePage({ lang, onUnauthorized }: { lang: Lang; onUnauthorized: () => 
                     Your image was saved successfully. The AI model server is currently offline — please try again later or contact the administrator.
                   </p>
                 </div>
+              ) : prediction.is_ood ? (
+                <div className="mx-auto mt-5 max-w-lg space-y-3 text-center">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-red-300 bg-red-50 px-4 py-2 dark:border-red-500/30 dark:bg-red-900/20">
+                    <span className="text-lg">🚫</span>
+                    <span className="text-sm font-semibold text-red-700 dark:text-red-400">Invalid image — not a DFU scan</span>
+                  </div>
+                  <p className="text-sm text-slate-500 dark:text-dark-text-muted">
+                    The uploaded image does not appear to be a diabetic foot ulcer. Please upload a plantar foot RGB photograph for accurate analysis.
+                  </p>
+                </div>
               ) : (
                 <div className="mx-auto mt-5 max-w-lg space-y-4 text-sm">
                   <p className="text-center text-lg text-slate-900 dark:text-dark-text">
@@ -573,11 +579,10 @@ function AdminPage({ lang }: { lang: Lang }) {
                   key={k}
                   type="button"
                   onClick={() => setTab(k)}
-                  className={`rounded-full px-4 py-1.5 transition-all ${
-                    tab === k
+                  className={`rounded-full px-4 py-1.5 transition-all ${tab === k
                       ? "bg-govsa-green font-bold text-white shadow-md"
                       : "text-slate-500 hover:text-slate-900 dark:text-dark-text-muted dark:hover:text-dark-text"
-                  }`}
+                    }`}
                 >
                   {k.charAt(0).toUpperCase() + k.slice(1)}
                 </button>
@@ -637,9 +642,8 @@ function AdminPage({ lang }: { lang: Lang }) {
                       <td className="px-6 py-4 font-medium dark:text-white">{u.name || "—"}</td>
                       <td className="px-6 py-4 text-slate-500 dark:text-dark-text-secondary">{u.email}</td>
                       <td className="px-6 py-4">
-                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
-                          u.role === "admin" ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700"
-                        }`}>
+                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${u.role === "admin" ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700"
+                          }`}>
                           {u.role}
                         </span>
                       </td>
@@ -692,17 +696,16 @@ function AdminPage({ lang }: { lang: Lang }) {
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
-                            log.prediction === "none" ? "bg-slate-100 text-slate-600" : "bg-red-100 text-red-700"
-                          }`}>
+                          <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${log.prediction === "none" ? "bg-slate-100 text-slate-600" : "bg-red-100 text-red-700"
+                            }`}>
                             {log.prediction || "pending"}
                           </span>
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
                             <div className="h-1.5 w-12 rounded-full bg-slate-100 dark:bg-dark-overlay">
-                              <div 
-                                className="h-full rounded-full bg-govsa-green" 
+                              <div
+                                className="h-full rounded-full bg-govsa-green"
                                 style={{ width: `${(log.confidence || 0) * 100}%` }}
                               />
                             </div>
@@ -735,7 +738,7 @@ function AboutPage({ lang }: { lang: Lang }) {
         </h1>
         <div className="space-y-6 text-lg text-slate-600 dark:text-dark-text-secondary leading-relaxed">
           <p>
-            {isAr 
+            {isAr
               ? "UlcerVision هو نظام متقدم مدعوم بالذكاء الاصطناعي مصمم لمساعدة المتخصصين في الرعاية الصحية في الكشف المبكر وتصنيف قرح القدم السكري (DFU)."
               : "UlcerVision is an advanced AI-powered system designed to assist healthcare professionals in the early detection and classification of Diabetic Foot Ulcers (DFU)."}
           </p>
@@ -801,7 +804,7 @@ export default function IndexPage() {
         setUser(u as User);
         setPage("home");
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   const safeSetPage = useCallback(
@@ -813,7 +816,7 @@ export default function IndexPage() {
   );
 
   const onSignOut = useCallback(() => {
-    api.logout().catch(() => {});
+    api.logout().catch(() => { });
     setUser(null);
     setPage("auth");
   }, []);
