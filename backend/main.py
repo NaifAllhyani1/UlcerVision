@@ -122,39 +122,37 @@ def run_inference(img: Image.Image) -> PredictResponse:
 
     pixel_values = state.image_processor(images=img, return_tensors="pt")["pixel_values"].to(DEVICE)
 
-    # DFU class logits and softmax
-    logits = state.model(pixel_values, state.text_input_ids, state.text_attention_mask)
-    probs = torch.softmax(logits, dim=1).squeeze(0)
-    conf, idx = torch.max(probs, dim=0)
-    idx_int = int(idx.item())
-
-    # Calculate cosine similarities for diagnostics
+    # Cosine similarities across all 4 classes
     img_emb = state.model.encode_image(pixel_values)
-    dfu_embs = state.model.encode_text(state.text_input_ids, state.text_attention_mask)
-    dfu_sims = (img_emb @ dfu_embs.T).squeeze(0)
-    best_dfu_sim = float(dfu_sims.max().item())
+    all_embs = state.model.encode_text(state.text_input_ids, state.text_attention_mask)
+    cos_sims = (img_emb @ all_embs.T).squeeze(0)   # (4,)
+    max_sim = float(cos_sims.max().item())
 
-    # OOD detection disabled for now until model is retrained to support it
-    is_ood = False
+    # Temperature-scaled logits + softmax over 4 classes
+    scale = state.model.logit_scale.exp().clamp(max=100)
+    logits = (scale * cos_sims)
+    probs = torch.softmax(logits, dim=0)
+
+    conf, idx = torch.max(probs, dim=0)
+    pred_name = CLASS_NAMES[int(idx.item())]
+
+    probs_cpu = probs.detach().cpu().tolist()
+    logits_cpu = logits.detach().cpu().tolist()
+    prob_map = {name: float(p) for name, p in zip(CLASS_NAMES, probs_cpu)}
 
     logger.info(
-        "Prediction: max_softmax=%.4f, is_ood=%s, dfu_sims=%s",
-        float(conf.item()), is_ood,
-        {n: round(float(s), 4) for n, s in zip(CLASS_NAMES, dfu_sims.tolist())},
+        "Prediction: name=%s, conf=%.4f, cos_sims=%s",
+        pred_name, float(conf.item()),
+        {n: round(float(s), 4) for n, s in zip(CLASS_NAMES, cos_sims.tolist())},
     )
-
-    pred_name = CLASS_NAMES[idx_int]
-    probs_cpu = probs.detach().cpu().tolist()
-    logits_cpu = logits.squeeze(0).detach().cpu().tolist()
-    prob_map = {name: float(p) for name, p in zip(CLASS_NAMES, probs_cpu)}
 
     return PredictResponse(
         prediction=pred_name,
         confidence=float(conf.item()),
         probabilities=prob_map,
-        logits=[float(x) for x in logits_cpu],
-        max_similarity=best_dfu_sim,
-        is_ood=is_ood,
+        logits=logits_cpu,
+        max_similarity=max_sim,
+        is_ood=False,
     )
 
 

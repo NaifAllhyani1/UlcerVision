@@ -22,7 +22,7 @@ export type AdminStats = {
   totalUsers: number;
   totalScans: number;
   scansProcessed: number;
-  predictionCounts: { none: number; infection: number; ischemia: number; both: number };
+  predictionCounts: { healthy: number; infection: number; ischemia: number; both: number; none: number };
   avgConfidence: number;
 };
 
@@ -122,7 +122,7 @@ export async function predict(file: File): Promise<PredictResponse> {
   const res = await fetch("/api/scans/upload", { method: "POST", body: form });
   await ensureOk(res, "Prediction failed");
   const body = await res.json();
-  const predicted = String(body.prediction || "none");
+  const predicted = String(body.prediction || "healthy");
   const conf = typeof body.confidence === "number" ? body.confidence : 0;
   const isOod = body.is_ood === true;
   const risk = riskFromPrediction(predicted, conf);
@@ -146,8 +146,8 @@ export async function scanHistory(): Promise<ScanHistoryItem[]> {
     id: s.id,
     file_name: (s.image_path || "").split("/").pop() || `scan-${s.id}`,
     created_at: s.uploaded_at,
-    risk: riskFromPrediction(String(s.prediction || "none"), Number(s.confidence || 0)),
-    predicted_class: s.prediction || "none",
+    risk: riskFromPrediction(String(s.prediction || "healthy"), Number(s.confidence || 0)),
+    predicted_class: s.prediction || "healthy",
   }));
 }
 

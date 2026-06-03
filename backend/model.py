@@ -8,10 +8,11 @@ SWIN_MODEL = "microsoft/swin-tiny-patch4-window7-224"
 CLIP_MODEL = "openai/clip-vit-base-patch32"
 EMBED_DIM = 128
 FREEZE_SWIN_STAGES = 2
-CLASS_NAMES = ["none", "infection", "ischemia", "both"]
+
+CLASS_NAMES = ["healthy", "infection", "ischemia", "both"]
 
 CLASS_DESCRIPTIONS = {
-    "none": (
+    "healthy": (
         "A diabetic foot wound with normal pink color, no visible exudate or pus, "
         "normal moisture level, well-defined and regular wound margins, "
         "superficial or minimal depth. The wound shows healthy tissue appearance "
@@ -58,7 +59,6 @@ class SwinTinyImageEncoder(nn.Module):
     def _freeze_stages(self, n_stages: int) -> None:
         for param in self.swin.embeddings.parameters():
             param.requires_grad = False
-
         for i, layer in enumerate(self.swin.encoder.layers):
             if i < n_stages:
                 for param in layer.parameters():
@@ -74,7 +74,6 @@ class CLIPTextEncoder(nn.Module):
     def __init__(self, clip_name: str, embed_dim: int):
         super().__init__()
         self.text_model = CLIPTextModel.from_pretrained(clip_name)
-
         for param in self.text_model.parameters():
             param.requires_grad = False
 
@@ -131,19 +130,15 @@ class DFUZeroShotModel(nn.Module):
         pixel_values: torch.Tensor,
         text_input_ids: torch.Tensor,
         text_attention_masks: torch.Tensor,
-    ) -> tuple[torch.Tensor, list[str], torch.Tensor]:
-        """Return (predicted_indices, class_names, max_cosine_sims).
-        OOD detection is handled externally via negative reference descriptions.
-        """
+    ) -> tuple[torch.Tensor, list[str]]:
+        """Return (predicted_indices, class_names)."""
         self.eval()
         img_emb = self.encode_image(pixel_values)
         txt_embs = self.encode_text(text_input_ids, text_attention_masks)
-
         cos_sims = img_emb @ txt_embs.T
         preds = cos_sims.argmax(dim=1)
-        max_sims, _ = cos_sims.max(dim=1)
         names = [CLASS_NAMES[p.item()] for p in preds]
-        return preds, names, max_sims
+        return preds, names
 
 
 def create_model() -> nn.Module:

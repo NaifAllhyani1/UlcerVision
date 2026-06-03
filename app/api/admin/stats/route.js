@@ -3,7 +3,7 @@ import db from "@/lib/db";
 import { requireAdmin } from "@/lib/admin-auth";
 
 function predictionCountMap(rows) {
-  const base = { none: 0, infection: 0, ischemia: 0, both: 0 };
+  const base = { healthy: 0, infection: 0, ischemia: 0, both: 0 };
   for (const row of rows) {
     if (row.prediction in base) base[row.prediction] = row.count;
   }

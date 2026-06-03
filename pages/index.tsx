@@ -150,8 +150,8 @@ function Navbar({
                 type="button"
                 onClick={() => setPage("home")}
                 className={`px-3 py-1 text-xs transition-all ${page === "home"
-                    ? "font-bold text-govsa-green border-b-2 border-govsa-green dark:text-dark-accent dark:border-dark-accent"
-                    : "text-textMuted hover:text-textPrimary dark:text-dark-text-secondary dark:hover:text-dark-text"
+                  ? "font-bold text-govsa-green border-b-2 border-govsa-green dark:text-dark-accent dark:border-dark-accent"
+                  : "text-textMuted hover:text-textPrimary dark:text-dark-text-secondary dark:hover:text-dark-text"
                   }`}
               >
                 {tr.nav.home}
@@ -160,8 +160,8 @@ function Navbar({
                 type="button"
                 onClick={() => setPage("about")}
                 className={`px-3 py-1 text-xs transition-all ${page === "about"
-                    ? "font-bold text-govsa-green border-b-2 border-govsa-green dark:text-dark-accent dark:border-dark-accent"
-                    : "text-textMuted hover:text-textPrimary dark:text-dark-text-secondary dark:hover:text-dark-text"
+                  ? "font-bold text-govsa-green border-b-2 border-govsa-green dark:text-dark-accent dark:border-dark-accent"
+                  : "text-textMuted hover:text-textPrimary dark:text-dark-text-secondary dark:hover:text-dark-text"
                   }`}
               >
                 {tr.nav.about}
@@ -171,8 +171,8 @@ function Navbar({
                   type="button"
                   onClick={() => setPage("admin")}
                   className={`px-3 py-1 text-xs transition-all ${page === "admin"
-                      ? "font-bold text-govsa-green border-b-2 border-govsa-green dark:text-dark-accent dark:border-dark-accent"
-                      : "text-textMuted hover:text-textPrimary dark:text-dark-text-secondary dark:hover:text-dark-text"
+                    ? "font-bold text-govsa-green border-b-2 border-govsa-green dark:text-dark-accent dark:border-dark-accent"
+                    : "text-textMuted hover:text-textPrimary dark:text-dark-text-secondary dark:hover:text-dark-text"
                     }`}
                 >
                   {tr.nav.admin}
@@ -273,8 +273,8 @@ function AuthPage({ lang, onAuthed }: { lang: Lang; onAuthed: (u: User) => void 
             type="button"
             onClick={() => setMode("signin")}
             className={`w-24 rounded-full px-3 py-1 text-[0.7rem] transition ${mode === "signin"
-                ? "bg-govsa-green font-semibold text-white shadow-sm"
-                : "text-textMuted hover:text-textPrimary dark:text-dark-text-secondary dark:hover:text-dark-text"
+              ? "bg-govsa-green font-semibold text-white shadow-sm"
+              : "text-textMuted hover:text-textPrimary dark:text-dark-text-secondary dark:hover:text-dark-text"
               }`}
           >
             {tr.auth.signIn}
@@ -283,8 +283,8 @@ function AuthPage({ lang, onAuthed }: { lang: Lang; onAuthed: (u: User) => void 
             type="button"
             onClick={() => setMode("signup")}
             className={`w-24 rounded-full px-3 py-1 text-[0.7rem] transition ${mode === "signup"
-                ? "bg-govsa-green font-semibold text-white shadow-sm"
-                : "text-textMuted hover:text-textPrimary dark:text-dark-text-secondary dark:hover:text-dark-text"
+              ? "bg-govsa-green font-semibold text-white shadow-sm"
+              : "text-textMuted hover:text-textPrimary dark:text-dark-text-secondary dark:hover:text-dark-text"
               }`}
           >
             {tr.auth.signUp}
@@ -580,8 +580,8 @@ function AdminPage({ lang }: { lang: Lang }) {
                   type="button"
                   onClick={() => setTab(k)}
                   className={`rounded-full px-4 py-1.5 transition-all ${tab === k
-                      ? "bg-govsa-green font-bold text-white shadow-md"
-                      : "text-slate-500 hover:text-slate-900 dark:text-dark-text-muted dark:hover:text-dark-text"
+                    ? "bg-govsa-green font-bold text-white shadow-md"
+                    : "text-slate-500 hover:text-slate-900 dark:text-dark-text-muted dark:hover:text-dark-text"
                     }`}
                 >
                   {k.charAt(0).toUpperCase() + k.slice(1)}
@@ -613,7 +613,7 @@ function AdminPage({ lang }: { lang: Lang }) {
               <div className="md:col-span-3 rounded-2xl border border-slate-100 bg-white p-6 shadow-sm dark:border-dark-border dark:bg-dark-elevated">
                 <p className="text-sm font-bold text-slate-900 dark:text-white mb-4">Diagnosis Distribution</p>
                 <div className="grid gap-3 sm:grid-cols-4">
-                  {(["none", "infection", "ischemia", "both"] as const).map((k) => (
+                  {(["healthy", "infection", "ischemia", "both"] as const).map((k) => (
                     <div key={k} className="rounded-xl bg-slate-50 p-4 dark:bg-dark-overlay">
                       <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{k}</p>
                       <p className="mt-1 text-xl font-bold text-slate-900 dark:text-white">{stats.predictionCounts?.[k] ?? 0}</p>
@@ -696,8 +696,13 @@ function AdminPage({ lang }: { lang: Lang }) {
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${log.prediction === "none" ? "bg-slate-100 text-slate-600" : "bg-red-100 text-red-700"
-                            }`}>
+                          <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
+                            log.prediction === "healthy"
+                              ? "bg-green-100 text-green-700"
+                              : log.prediction === "pending"
+                              ? "bg-slate-100 text-slate-500"
+                              : "bg-red-100 text-red-700"
+                          }`}>
                             {log.prediction || "pending"}
                           </span>
                         </td>

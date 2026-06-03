@@ -17,7 +17,7 @@ async function saveUploadBuffer(buffer, originalName) {
 }
 
 function normalizePredictResponse(data) {
-  const prediction = data?.prediction ?? data?.predicted_class ?? "none";
+  const prediction = data?.prediction ?? data?.predicted_class ?? "healthy";
   const confidence = typeof data?.confidence === "number" ? data.confidence : 0;
   const raw = data?.probabilities ?? data?.raw_probabilities ?? {};
   const modelVersion = data?.model_version ?? "unknown";
@@ -57,7 +57,7 @@ export async function POST(req) {
     } catch (predictErr) {
       console.error("[scans/upload] Prediction backend error:", predictErr.message);
       backendWarning = predictErr.message;
-      normalized = { prediction: "pending", confidence: 0, raw: {}, modelVersion: "unavailable" };
+      normalized = { prediction: "pending", confidence: 0, raw: { healthy: 0, infection: 0, ischemia: 0, both: 0 }, modelVersion: "unavailable" };
     }
 
     db.prepare(
