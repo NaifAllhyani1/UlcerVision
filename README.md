@@ -172,7 +172,7 @@ UlcerVision/
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/<your-username>/UlcerVision.git
+git clone https://github.com/NaifAllhyani1/UlcerVision
 cd UlcerVision
 ```
 
