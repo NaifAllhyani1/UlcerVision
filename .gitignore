@@ -2,7 +2,7 @@
 node_modules/
 
 # Env
-.env
+backend/.env
 .env.local
 .env.*.local
 
@@ -19,6 +19,7 @@ __pycache__/
 *.pyc
 
 # Model weights (too large for Git — use Git LFS or share separately)
+backend/model/*.pt
 *.pt
 
 # Database (auto-created on first run)

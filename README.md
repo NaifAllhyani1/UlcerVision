@@ -127,8 +127,11 @@ UlcerVision/
 │   ├── model.py                  # DFUZeroShotModel (Swin-Tiny + CLIP)
 │   ├── utils.py                  # Image transforms & model loading utils
 │   ├── requirements.txt          # Python dependencies
-│   ├── .venv/                    # Python virtual environment (local)
-│   └── tiny-swin with zero-shot.pt  # Trained weights (~365 MB)
+│   ├── .env.example              # Template — copy to .env and set MODEL_PATH
+│   ├── .venv/                    # Python virtual environment (local, git-ignored)
+│   └── model/                    # Weights directory (tracked, *.pt git-ignored)
+│       ├── .gitkeep              # Keeps directory in Git
+│       └── model.pt              # Trained weights (~365 MB) — not in repo
 │
 ├── lib/                          # Shared utilities
 │   ├── api.ts                    # Frontend API client
@@ -144,8 +147,9 @@ UlcerVision/
 ├── styles/                       # CSS styles
 ├── middleware.js                  # Route protection (admin pages)
 │
-├── run_backend.bat               # One-click backend launcher (CMD)
-├── run_backend.ps1               # Backend launcher (PowerShell)
+├── run_backend.bat               # One-click backend launcher (Windows CMD)
+├── run_backend.ps1               # Backend launcher (Windows PowerShell)
+├── run_backend.sh                # Backend launcher (macOS / Linux)
 ├── package.json                  # Node.js dependencies & scripts
 ├── tailwind.config.js            # Tailwind CSS configuration
 ├── tsconfig.json                 # TypeScript configuration
@@ -181,45 +185,56 @@ npm install
 ### 3. Set up the Python backend
 
 ```bash
+# From the project root:
 cd backend
-python -m venv .venv
+python3 -m venv .venv          # use 'python' on Windows if 'python3' is not found
 
-# Windows
+# Activate the virtual environment:
+#   Windows (CMD / PowerShell)
 .venv\Scripts\activate
-
-# macOS/Linux
+#   macOS / Linux
 source .venv/bin/activate
 
 pip install -r requirements.txt
 ```
 
-### 4. Model weights
+### 4. Copy the environment file
 
-Place your trained model weights file (e.g., `bestmodel.pt`) in the `backend/model/` directory:
+```bash
+# From the project root:
+cp backend/.env.example backend/.env    # macOS / Linux
+copy backend\.env.example backend\.env  # Windows CMD
+```
 
-1. Create a `model` directory inside `backend/` if it doesn't exist (e.g., `backend/model/`).
-2. Place your `bestmodel.pt` file inside `backend/model/`.
-3. Open or create the `backend/.env` file and set the `MODEL_PATH` variable to point to your new file:
-   ```env
-   MODEL_PATH=model/bestmodel.pt
-   ```
+The default value (`MODEL_PATH=model/model.pt`) works without changes as long as you place the weights at `backend/model/model.pt` (step 5).
 
-> **Note**: The model weights file is too large for GitHub. See [Deployment Notes](#deployment-notes) for options.
+### 5. Place the model weights file
+
+The trained weights file (~365 MB) is **not included in the repository** because it is too large for Git.
+
+1. Obtain `model.pt` from the project team or the shared storage link.
+2. Place it at `backend/model/model.pt` (the directory already exists in the repo).
+
+> **Note**: See [Deployment Notes](#deployment-notes) for Git LFS and external storage options.
 
 ---
 
 ## Running the Application
 
-The easiest way to run the entire project (both frontend and backend simultaneously) is to use the provided `npm` script. 
+### Recommended — run everything in one command
 
-### The Recommended Way
-Run the following command from the root `UlcerVision` directory:
+From the project root:
+
 ```bash
 npm run dev:all
 ```
-*This command uses `concurrently` to launch the Next.js frontend on port 3000 and the FastAPI backend on port 8000 in a single terminal window.*
+
+*Uses `concurrently` to launch the Next.js frontend on port 3000 and the FastAPI backend on port 8000 in a single terminal window.*
+
+> **macOS / Linux users:** `npm run dev:all` uses a Windows-style venv path for the backend script. For the backend, use `./run_backend.sh` in a separate terminal instead, then run `npm run dev` for the frontend.
 
 ### Alternative Options
+
 <details>
 <summary>Click to view manual or separate startup methods</summary>
 
@@ -232,19 +247,27 @@ npm run backend
 npm run dev
 ```
 
-**Option B: One-click scripts (Windows)**
-- **Command Prompt:** Run `run_backend.bat`
-- **PowerShell:** Run `.\run_backend.ps1`
-Then in a separate terminal, run `npm run dev`
+**Option B: One-click scripts**
+- **Windows (CMD):** `run_backend.bat`
+- **Windows (PowerShell):** `.\run_backend.ps1`
+- **macOS / Linux:** `./run_backend.sh` *(auto-creates venv, installs requirements, sets MODEL_PATH)*
+
+Then in a separate terminal: `npm run dev`
 
 **Option C: Fully Manual**
-**Terminal 1 — Backend (Python):**
+
+Terminal 1 — Backend:
 ```bash
 cd backend
+# Windows
 .venv\Scripts\activate
+# macOS / Linux
+source .venv/bin/activate
+
 uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
-**Terminal 2 — Frontend (Next.js):**
+
+Terminal 2 — Frontend:
 ```bash
 npm run dev
 ```
@@ -257,6 +280,27 @@ npm run dev
 | **Frontend** | http://localhost:3000 |
 | **Backend API Docs** | http://localhost:8000/docs |
 | **Backend Health Check** | http://localhost:8000/health |
+
+---
+
+## Verification
+
+After starting the backend, open **http://localhost:8000/health** in your browser. You should see a JSON response like:
+
+```json
+{
+  "status": "ok",
+  "model_loaded": true,
+  "device": "cpu",
+  "weights_file": "backend/model/model.pt",
+  "error": null
+}
+```
+
+Confirm **both** of the following:
+
+1. `model_loaded` is `true` — if it is `false`, the weights file was not found or failed to load.
+2. `weights_file` does **not** contain anyone's personal machine path (e.g., `C:\Users\YourName\...` or `/home/yourname/...`). If it does, the `MODEL_PATH` environment variable is not being read correctly — make sure you copied `backend/.env.example` to `backend/.env` and that it contains `MODEL_PATH=model/model.pt`.
 
 ---
 
@@ -295,7 +339,7 @@ Check model status and server health.
   "status": "ok",
   "model_loaded": true,
   "device": "cpu",
-  "weights_file": "D:\\gdp2\\backend\\tiny-swin with zero-shot.pt",
+  "weights_file": "backend/model/model.pt",
   "error": null
 }
 ```
