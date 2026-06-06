@@ -177,6 +177,10 @@ UlcerVision/
    ```bash
    cd UlcerVision
    ```
+```bash
+git clone https://github.com/NaifAllhyani1/UlcerVision
+cd UlcerVision
+```
 
 3. Install frontend dependencies:
    ```bash
