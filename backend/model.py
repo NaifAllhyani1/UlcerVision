@@ -41,11 +41,10 @@ CLASS_DESCRIPTIONS = {
 
 
 class SwinTinyImageEncoder(nn.Module):
-    def __init__(self, swin_name: str, embed_dim: int, freeze_stages: int = 2):
+    def __init__(self, swin_name, embed_dim, freeze_stages=2):
         super().__init__()
         self.swin = SwinModel.from_pretrained(swin_name)
         self._freeze_stages(freeze_stages)
-
         swin_hidden = self.swin.config.hidden_size
         self.proj = nn.Sequential(
             nn.Linear(swin_hidden, embed_dim * 2),
@@ -56,7 +55,7 @@ class SwinTinyImageEncoder(nn.Module):
             nn.Dropout(0.1),
         )
 
-    def _freeze_stages(self, n_stages: int) -> None:
+    def _freeze_stages(self, n_stages):
         for param in self.swin.embeddings.parameters():
             param.requires_grad = False
         for i, layer in enumerate(self.swin.encoder.layers):
@@ -64,19 +63,18 @@ class SwinTinyImageEncoder(nn.Module):
                 for param in layer.parameters():
                     param.requires_grad = False
 
-    def forward(self, pixel_values: torch.Tensor) -> torch.Tensor:
+    def forward(self, pixel_values):
         outputs = self.swin(pixel_values=pixel_values)
         pooled = outputs.last_hidden_state.mean(dim=1)
         return self.proj(pooled)
 
 
 class CLIPTextEncoder(nn.Module):
-    def __init__(self, clip_name: str, embed_dim: int):
+    def __init__(self, clip_name, embed_dim):
         super().__init__()
         self.text_model = CLIPTextModel.from_pretrained(clip_name)
         for param in self.text_model.parameters():
             param.requires_grad = False
-
         clip_hidden = self.text_model.config.hidden_size
         self.proj = nn.Sequential(
             nn.Linear(clip_hidden, embed_dim * 2),
@@ -86,52 +84,34 @@ class CLIPTextEncoder(nn.Module):
             nn.Linear(embed_dim * 2, embed_dim),
         )
 
-    def forward(self, input_ids: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor:
+    def forward(self, input_ids, attention_mask):
         outputs = self.text_model(input_ids=input_ids, attention_mask=attention_mask)
         pooled = outputs.pooler_output
         return self.proj(pooled)
 
 
 class DFUZeroShotModel(nn.Module):
-    def __init__(
-        self,
-        swin_name: str = SWIN_MODEL,
-        clip_name: str = CLIP_MODEL,
-        embed_dim: int = EMBED_DIM,
-        freeze_stages: int = FREEZE_SWIN_STAGES,
-        num_classes: int = 4,
-    ):
+    def __init__(self, swin_name, clip_name, embed_dim, freeze_stages=2, num_classes=4):
         super().__init__()
         self.image_encoder = SwinTinyImageEncoder(swin_name, embed_dim, freeze_stages)
         self.text_encoder = CLIPTextEncoder(clip_name, embed_dim)
         self.logit_scale = nn.Parameter(torch.ones([]) * np.log(1 / 0.07))
         self.num_classes = num_classes
 
-    def encode_image(self, pixel_values: torch.Tensor) -> torch.Tensor:
+    def encode_image(self, pixel_values):
         return F.normalize(self.image_encoder(pixel_values), dim=-1)
 
-    def encode_text(self, input_ids: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor:
+    def encode_text(self, input_ids, attention_mask):
         return F.normalize(self.text_encoder(input_ids, attention_mask), dim=-1)
 
-    def forward(
-        self,
-        pixel_values: torch.Tensor,
-        text_input_ids: torch.Tensor,
-        text_attention_masks: torch.Tensor,
-    ) -> torch.Tensor:
+    def forward(self, pixel_values, text_input_ids, text_attention_masks):
         img_emb = self.encode_image(pixel_values)
         txt_embs = self.encode_text(text_input_ids, text_attention_masks)
         scale = self.logit_scale.exp().clamp(max=100)
         return scale * img_emb @ txt_embs.T
 
     @torch.no_grad()
-    def predict(
-        self,
-        pixel_values: torch.Tensor,
-        text_input_ids: torch.Tensor,
-        text_attention_masks: torch.Tensor,
-    ) -> tuple[torch.Tensor, list[str]]:
-        """Return (predicted_indices, class_names)."""
+    def predict(self, pixel_values, text_input_ids, text_attention_masks):
         self.eval()
         img_emb = self.encode_image(pixel_values)
         txt_embs = self.encode_text(text_input_ids, text_attention_masks)
@@ -139,7 +119,3 @@ class DFUZeroShotModel(nn.Module):
         preds = cos_sims.argmax(dim=1)
         names = [CLASS_NAMES[p.item()] for p in preds]
         return preds, names
-
-
-def create_model() -> nn.Module:
-    return DFUZeroShotModel()

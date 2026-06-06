@@ -160,147 +160,116 @@ UlcerVision/
 
 ## Prerequisites
 
-- **Node.js** ≥ 18.x
-- **Python** ≥ 3.10
-- **pip** (Python package manager)
+- **Node.js** 18 or higher
+- **Python** 3.10 or higher
 - **Git**
 
 ---
 
 ## Installation
 
-### 1. Clone the repository
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/NaifAllhyani1/UlcerVision.git
+   ```
 
-```bash
-git clone https://github.com/<your-username>/UlcerVision.git
-cd UlcerVision
-```
+2. Enter the project directory:
+   ```bash
+   cd UlcerVision
+   ```
 
-### 2. Install frontend dependencies
+3. Install frontend dependencies:
+   ```bash
+   npm install
+   ```
 
-```bash
-npm install
-```
+4. Go into the backend directory:
+   ```bash
+   cd backend
+   ```
 
-### 3. Set up the Python backend
+5. Create a Python virtual environment:
+   ```bash
+   python -m venv .venv
+   ```
 
-```bash
-# From the project root:
-cd backend
-python3 -m venv .venv          # use 'python' on Windows if 'python3' is not found
+6. Activate the virtual environment:
+   ```bash
+   # Windows
+   .venv\Scripts\activate
 
-# Activate the virtual environment:
-#   Windows (CMD / PowerShell)
-.venv\Scripts\activate
-#   macOS / Linux
-source .venv/bin/activate
+   # Mac/Linux
+   source .venv/bin/activate
+   ```
 
-pip install -r requirements.txt
-```
+7. Install Python dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-### 4. Copy the environment file
+8. Return to the project root and copy the environment file:
+   ```bash
+   cd ..
 
-```bash
-# From the project root:
-cp backend/.env.example backend/.env    # macOS / Linux
-copy backend\.env.example backend\.env  # Windows CMD
-```
+   # Windows
+   copy backend\.env.example backend\.env
 
-The default value (`MODEL_PATH=model/model.pt`) works without changes as long as you place the weights at `backend/model/model.pt` (step 5).
+   # Mac/Linux
+   cp backend/.env.example backend/.env
+   ```
 
-### 5. Place the model weights file
+9. *(No changes needed to `.env`)* The default value `MODEL_PATH=model/model.pt` works as-is.
 
-The trained weights file (~365 MB) is **not included in the repository** because it is too large for Git.
-
-1. Obtain `model.pt` from the project team or the shared storage link.
-2. Place it at `backend/model/model.pt` (the directory already exists in the repo).
-
-> **Note**: See [Deployment Notes](#deployment-notes) for Git LFS and external storage options.
+10. Place the model weights file at:
+    ```
+    backend/model/model.pt
+    ```
+    The `backend/model/` directory already exists in the repository. Obtain `model.pt` from the project team.
 
 ---
 
-## Running the Application
+## Running
 
-### Recommended — run everything in one command
-
-From the project root:
+**Recommended** — starts the frontend and backend together:
 
 ```bash
 npm run dev:all
 ```
 
-*Uses `concurrently` to launch the Next.js frontend on port 3000 and the FastAPI backend on port 8000 in a single terminal window.*
+**Windows alternative:**
+- Double-click `run_backend.bat` **or** run `.\run_backend.ps1` in PowerShell for the backend
+- Run `npm run dev` in a separate terminal for the frontend
 
-> **macOS / Linux users:** `npm run dev:all` uses a Windows-style venv path for the backend script. For the backend, use `./run_backend.sh` in a separate terminal instead, then run `npm run dev` for the frontend.
-
-### Alternative Options
-
-<details>
-<summary>Click to view manual or separate startup methods</summary>
-
-**Option A: Separate npm scripts**
-```bash
-# Start backend only
-npm run backend
-
-# Start frontend only
-npm run dev
-```
-
-**Option B: One-click scripts**
-- **Windows (CMD):** `run_backend.bat`
-- **Windows (PowerShell):** `.\run_backend.ps1`
-- **macOS / Linux:** `./run_backend.sh` *(auto-creates venv, installs requirements, sets MODEL_PATH)*
-
-Then in a separate terminal: `npm run dev`
-
-**Option C: Fully Manual**
-
-Terminal 1 — Backend:
-```bash
-cd backend
-# Windows
-.venv\Scripts\activate
-# macOS / Linux
-source .venv/bin/activate
-
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-```
-
-Terminal 2 — Frontend:
-```bash
-npm run dev
-```
-</details>
-
-### Access the application
-
-| Service | URL |
-|---|---|
-| **Frontend** | http://localhost:3000 |
-| **Backend API Docs** | http://localhost:8000/docs |
-| **Backend Health Check** | http://localhost:8000/health |
+**Mac/Linux alternative:**
+- Run `./run_backend.sh` for the backend
+- Run `npm run dev` in a separate terminal for the frontend
 
 ---
 
 ## Verification
 
-After starting the backend, open **http://localhost:8000/health** in your browser. You should see a JSON response like:
+After starting the backend, open **http://localhost:8000/health** in your browser.
 
+You must see:
 ```json
 {
   "status": "ok",
   "model_loaded": true,
   "device": "cpu",
-  "weights_file": "backend/model/model.pt",
+  "weights_file": "...",
   "error": null
 }
 ```
 
-Confirm **both** of the following:
+If you see `"model_loaded": false`, check that:
+- `backend/model/model.pt` exists
+- `backend/.env` contains `MODEL_PATH=model/model.pt`
 
-1. `model_loaded` is `true` — if it is `false`, the weights file was not found or failed to load.
-2. `weights_file` does **not** contain anyone's personal machine path (e.g., `C:\Users\YourName\...` or `/home/yourname/...`). If it does, the `MODEL_PATH` environment variable is not being read correctly — make sure you copied `backend/.env.example` to `backend/.env` and that it contains `MODEL_PATH=model/model.pt`.
+| Service | URL |
+|---|---|
+| **Frontend** | http://localhost:3000 |
+| **Backend API Docs** | http://localhost:8000/docs |
+| **Backend Health** | http://localhost:8000/health |
 
 ---
 

@@ -3,9 +3,9 @@ import logging
 import os
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Any
 
 import torch
+from dotenv import load_dotenv
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -16,36 +16,29 @@ from model import (
     CLASS_DESCRIPTIONS,
     CLASS_NAMES,
     CLIP_MODEL,
+    EMBED_DIM,
+    FREEZE_SWIN_STAGES,
     SWIN_MODEL,
-    create_model,
+    DFUZeroShotModel,
 )
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("image-classification-api")
 
-BASE_DIR = Path(__file__).resolve().parent
-WEIGHTS_FILE = Path(os.environ.get("MODEL_PATH", str(Path(__file__).parent / "model" / "model.pt")))
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+load_dotenv(Path(__file__).parent / ".env")
+
+BASE_DIR = Path(__file__).parent
+model_path = os.environ.get("MODEL_PATH", str(BASE_DIR / "model" / "model.pt"))
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-def resolve_state_dict(checkpoint: Any) -> dict[str, torch.Tensor]:
-    if isinstance(checkpoint, dict):
-        for key in ("state_dict", "model_state_dict", "model"):
-            nested = checkpoint.get(key)
-            if isinstance(nested, dict):
-                return nested
-        if all(isinstance(k, str) for k in checkpoint.keys()):
-            return checkpoint
-    raise RuntimeError(
-        "Could not resolve state_dict from checkpoint. "
-        "Expected a state dict or a dict containing state_dict/model_state_dict/model."
-    )
-
+# ---------------------------------------------------------------------------
+# Application state
+# ---------------------------------------------------------------------------
 
 class AppState:
-    model: torch.nn.Module | None = None
+    model: DFUZeroShotModel | None = None
     image_processor: AutoImageProcessor | None = None
-    tokenizer: CLIPTokenizer | None = None
     text_input_ids: torch.Tensor | None = None
     text_attention_mask: torch.Tensor | None = None
     load_error: str | None = None
@@ -55,14 +48,9 @@ class AppState:
 state = AppState()
 
 
-class PredictResponse(BaseModel):
-    prediction: str
-    confidence: float
-    probabilities: dict[str, float]
-    logits: list[float]
-    max_similarity: float
-    is_ood: bool
-
+# ---------------------------------------------------------------------------
+# Response schemas
+# ---------------------------------------------------------------------------
 
 class HealthResponse(BaseModel):
     status: str
@@ -72,88 +60,46 @@ class HealthResponse(BaseModel):
     error: str | None = None
 
 
+class PredictResponse(BaseModel):
+    prediction: str
+    confidence: float
+    probabilities: dict[str, float]
+    is_ood: bool
+
+
+# ---------------------------------------------------------------------------
+# Startup / shutdown
+# ---------------------------------------------------------------------------
+
 def startup_load_model() -> None:
-    logger.info("Loading DFU zero-shot model weights=%s", WEIGHTS_FILE)
-    model = create_model()
-    if not WEIGHTS_FILE.exists():
-        raise FileNotFoundError(f"Weights not found at {WEIGHTS_FILE}")
+    weights = Path(model_path)
+    logger.info("Loading model weights from %s", weights)
 
-    checkpoint = torch.load(WEIGHTS_FILE, map_location=DEVICE)
-    state_dict = resolve_state_dict(checkpoint)
+    if not weights.exists():
+        raise FileNotFoundError(f"Weights file not found: {weights}")
 
-    try:
-        model.load_state_dict(state_dict, strict=True)
-    except RuntimeError as exc:
-        raise RuntimeError(
-            f"Failed loading checkpoint into model (strict=True). "
-            f"Check architecture/weights compatibility. Details: {exc}"
-        ) from exc
-
-    model.to(DEVICE)
+    ckpt = torch.load(weights, map_location=device)
+    model = DFUZeroShotModel(SWIN_MODEL, CLIP_MODEL, EMBED_DIM, FREEZE_SWIN_STAGES)
+    model.load_state_dict(ckpt, strict=True)
     model.eval()
+    model.to(device)
 
     image_processor = AutoImageProcessor.from_pretrained(SWIN_MODEL)
     tokenizer = CLIPTokenizer.from_pretrained(CLIP_MODEL)
 
     desc_list = [CLASS_DESCRIPTIONS[c] for c in CLASS_NAMES]
-    text_inputs = tokenizer(desc_list, padding=True, truncation=True, max_length=77, return_tensors="pt")
+    text_inputs = tokenizer(
+        desc_list, padding=True, truncation=True, max_length=77, return_tensors="pt"
+    )
 
     state.model = model
     state.image_processor = image_processor
-    state.tokenizer = tokenizer
-    state.text_input_ids = text_inputs["input_ids"].to(DEVICE)
-    state.text_attention_mask = text_inputs["attention_mask"].to(DEVICE)
+    state.text_input_ids = text_inputs["input_ids"].to(device)
+    state.text_attention_mask = text_inputs["attention_mask"].to(device)
     state.load_error = None
     state.loaded = True
 
-    logger.info("Model loaded successfully on %s", DEVICE)
-
-
-@torch.no_grad()
-def run_inference(img: Image.Image) -> PredictResponse:
-    if (
-        not state.loaded
-        or state.model is None
-        or state.image_processor is None
-        or state.text_input_ids is None
-        or state.text_attention_mask is None
-    ):
-        raise HTTPException(status_code=503, detail=f"Model not ready: {state.load_error or 'not loaded'}")
-
-    pixel_values = state.image_processor(images=img, return_tensors="pt")["pixel_values"].to(DEVICE)
-
-    # Cosine similarities across all 4 classes
-    img_emb = state.model.encode_image(pixel_values)
-    all_embs = state.model.encode_text(state.text_input_ids, state.text_attention_mask)
-    cos_sims = (img_emb @ all_embs.T).squeeze(0)   # (4,)
-    max_sim = float(cos_sims.max().item())
-
-    # Temperature-scaled logits + softmax over 4 classes
-    scale = state.model.logit_scale.exp().clamp(max=100)
-    logits = (scale * cos_sims)
-    probs = torch.softmax(logits, dim=0)
-
-    conf, idx = torch.max(probs, dim=0)
-    pred_name = CLASS_NAMES[int(idx.item())]
-
-    probs_cpu = probs.detach().cpu().tolist()
-    logits_cpu = logits.detach().cpu().tolist()
-    prob_map = {name: float(p) for name, p in zip(CLASS_NAMES, probs_cpu)}
-
-    logger.info(
-        "Prediction: name=%s, conf=%.4f, cos_sims=%s",
-        pred_name, float(conf.item()),
-        {n: round(float(s), 4) for n, s in zip(CLASS_NAMES, cos_sims.tolist())},
-    )
-
-    return PredictResponse(
-        prediction=pred_name,
-        confidence=float(conf.item()),
-        probabilities=prob_map,
-        logits=logits_cpu,
-        max_similarity=max_sim,
-        is_ood=False,
-    )
+    logger.info("Model loaded successfully on %s", device)
 
 
 @asynccontextmanager
@@ -167,6 +113,10 @@ async def lifespan(_: FastAPI):
     yield
 
 
+# ---------------------------------------------------------------------------
+# FastAPI app
+# ---------------------------------------------------------------------------
+
 app = FastAPI(
     title="DFU Zero-Shot Classification API",
     version="1.0.0",
@@ -175,42 +125,80 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 
+# ---------------------------------------------------------------------------
+# Endpoints
+# ---------------------------------------------------------------------------
+
 @app.get("/health", response_model=HealthResponse)
 async def health() -> HealthResponse:
     return HealthResponse(
         status="ok" if state.loaded else "error",
         model_loaded=state.loaded,
-        device=str(DEVICE),
-        weights_file=str(WEIGHTS_FILE),
+        device=str(device),
+        weights_file=model_path,
         error=state.load_error,
     )
 
 
 @app.post("/predict", response_model=PredictResponse)
-async def predict(file: UploadFile | None = File(default=None), image: UploadFile | None = File(default=None)):
-    """
-    Accept multipart/form-data image upload.
-    Frontend key compatibility:
-    - preferred: file
-    - also supports: image
-    """
-    upload = file or image
-    if upload is None:
-        raise HTTPException(status_code=422, detail="Missing upload file. Expected form-data key 'file'.")
+async def predict(file: UploadFile = File(...)):
+    """Classify a DFU image. Accepts multipart/form-data with field 'file'."""
+    if not state.loaded or state.model is None:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Model not ready: {state.load_error or 'not loaded'}",
+        )
 
+    # --- Load image ---
     try:
-        raw = await upload.read()
-        pil = Image.open(io.BytesIO(raw)).convert("RGB")
+        raw = await file.read()
+        image = Image.open(io.BytesIO(raw)).convert("RGB")
     except UnidentifiedImageError as exc:
-        raise HTTPException(status_code=400, detail=f"Invalid image upload: {exc}") from exc
+        raise HTTPException(status_code=400, detail=f"Invalid image: {exc}") from exc
     except Exception as exc:
-        raise HTTPException(status_code=400, detail=f"Failed to read uploaded image: {exc}") from exc
+        raise HTTPException(status_code=400, detail=f"Failed to read image: {exc}") from exc
 
-    return run_inference(pil)
+    # --- Preprocess ---
+    inputs = state.image_processor(images=image, return_tensors="pt")
+    pixel_values = inputs["pixel_values"].to(device)
+
+    # --- Inference ---
+    with torch.no_grad():
+        preds, names = state.model.predict(
+            pixel_values, state.text_input_ids, state.text_attention_mask
+        )
+
+        # Compute cosine similarities for confidence + OOD
+        img_emb = state.model.encode_image(pixel_values)
+        txt_embs = state.model.encode_text(state.text_input_ids, state.text_attention_mask)
+        cos_sims = (img_emb @ txt_embs.T).squeeze(0)   # (4,)
+        max_sim = float(cos_sims.max().item())
+
+        scale = state.model.logit_scale.exp().clamp(max=100)
+        logits = scale * cos_sims
+        probs = torch.softmax(logits, dim=0)
+
+        conf, idx = torch.max(probs, dim=0)
+        pred_name = CLASS_NAMES[int(idx.item())]
+        probs_cpu = probs.detach().cpu().tolist()
+        prob_map = {name: float(p) for name, p in zip(CLASS_NAMES, probs_cpu)}
+        is_ood = max_sim < 0.20
+
+    logger.info(
+        "Prediction: %s  conf=%.4f  max_sim=%.4f  is_ood=%s",
+        pred_name, float(conf.item()), max_sim, is_ood,
+    )
+
+    return PredictResponse(
+        prediction=pred_name,
+        confidence=float(conf.item()),
+        probabilities=prob_map,
+        is_ood=is_ood,
+    )
